@@ -90,6 +90,10 @@
 													<ScaleTransform ScaleX="1" ScaleY="-1" />
 												</StackPanel.RenderTransform>
 
+												<RadioButton IsChecked="{Binding IsSelected}"
+												             GroupName="QubitSelection"
+												             />
+												
 												<!-- First Vertical Line -->
 												<Rectangle
                                                     Width="5"

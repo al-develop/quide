@@ -52,11 +52,11 @@ public class CircuitGridViewModel : ViewModelBase
 
     private readonly ComputerModel _model;
 
+    private QubitViewModel _selectedQubit;
     private ObservableCollection<RegisterViewModel> _registers;
     private ObservableCollection<StepViewModel> _steps;
 
     private int _currentStep;
-
     private double _scaleFactor = 0.75;
     private readonly double _scaleFactorMax = 4.0;
     private readonly double _scaleFactorMin = 0.1;
@@ -96,6 +96,28 @@ public class CircuitGridViewModel : ViewModelBase
 
     #region Model Properties
 
+    public QubitViewModel SelectedQubit
+    {
+        get => _selectedQubit;
+        set
+        {
+            // If the same item is set again, do nothing.
+            if (_selectedQubit == value)
+                return;
+
+            // Deselect the old qubit if it exists.
+            if (_selectedQubit != null)
+                _selectedQubit.IsSelected = false;
+            
+            _selectedQubit = value;
+
+            // Select the new qubit if it's not null.
+            if (_selectedQubit != null)
+                _selectedQubit.IsSelected = true;
+            OnPropertyChanged(nameof(SelectedQubit));
+        }
+    }
+    
     public ObservableCollection<RegisterViewModel> Registers
     {
         get
@@ -207,7 +229,7 @@ public class CircuitGridViewModel : ViewModelBase
         var registers = new ObservableCollection<RegisterViewModel>();
         for (var i = 0; i < _model.Registers.Count; i++)
         {
-            var reg = new RegisterViewModel(_model, i, _dialogManager);
+            var reg = new RegisterViewModel(_model, i, _dialogManager, this);
             reg.QubitsChanged += registers_QubitsChanged;
             registers.Add(reg);
         }
@@ -279,7 +301,7 @@ public class CircuitGridViewModel : ViewModelBase
                     var newRow = e.NewStartingIndex;
                     if (item is RegisterModel)
                     {
-                        var reg = new RegisterViewModel(_model, newRow, _dialogManager);
+                        var reg = new RegisterViewModel(_model, newRow, _dialogManager, this);
                         reg.QubitsChanged += registers_QubitsChanged;
                         Registers.Insert(newRow, reg);
                         for (var i = newRow + 1; i < _registers.Count; i++) _registers[i].IncrementIndex();
