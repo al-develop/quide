@@ -161,6 +161,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public BlochSphereViewModel BlochSphere { get; private set; }
+    
     public static ActionName SelectedAction { get; private set; }
 
     public string SelectedComposite
@@ -185,7 +187,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _window = window;
         _dialogManager = new DialogManager(_window);
-
+        BlochSphere = new BlochSphereViewModel();
+        
         // they need dialogManager
         InitFromModel(ComputerModel.CreateModelForGUI());
 
