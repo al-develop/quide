@@ -24,23 +24,17 @@ public class QubitViewModel : ViewModelBase
         get => _isSelected;
         set
         {
+            if (_isSelected == value)
+                return;
+            
             _isSelected = value;
             OnPropertyChanged(nameof(IsSelected));
-            if (_isSelected == value) return;
-
-            _isSelected = value;
-            OnPropertyChanged(nameof(IsSelected));
-
-            // If this qubit is being checked by the user, tell the parent.
+            
             if (_isSelected)
-            {
                 _topParentVM.SelectedQubit = this;
-            }
-            // This handles the case where a user can uncheck a radio button (rare, but possible)
             else if (_topParentVM.SelectedQubit == this)
-            {
                 _topParentVM.SelectedQubit = null;
-            }
+            
         }
     }
 

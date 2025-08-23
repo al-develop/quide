@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using Microsoft.VisualBasic.CompilerServices;
@@ -176,5 +177,13 @@ public class BlochSphereGenerator
         Coord3D result3D = new(x_2, y_2, z_2);
         Coordinates result2D = new(x_2, y_2);
         return (result3D, result2D);
+    }
+
+    public Avalonia.Media.Imaging.Bitmap ToBitmap(ScottPlot.Image plot)
+    {
+        using (MemoryStream ms = new MemoryStream(plot.GetImageBytes()))
+        {
+            return new Avalonia.Media.Imaging.Bitmap(ms);
+        }
     }
 }
