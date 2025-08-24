@@ -8,6 +8,8 @@ public class BlochSphereViewModel : ViewModelBase
     private int _horizontalDegree;
     private int _verticalDegree;
     private string _stateVector;
+    private int _imgWidth;
+    private int _imgHeight;
 
     public string StateVector
     {
@@ -47,5 +49,31 @@ public class BlochSphereViewModel : ViewModelBase
             _blochImage = value;
             this.OnPropertyChanged(nameof(BlochImage));
         }
+    }
+
+    public int ImgWidth
+    {
+        get => _imgWidth;
+        set
+        {
+            _imgWidth = value;
+            OnPropertyChanged(nameof(ImgWidth));
+        }
+    }
+
+    public int ImgHeight
+    {
+        get => _imgHeight;
+        set
+        {
+            _imgHeight = value;
+            OnPropertyChanged(nameof(ImgHeight));
+        }
+    }
+
+    public void SetImageSize(int imgSize)
+    {
+        this.ImgWidth = imgSize;
+        this.ImgHeight = imgSize;
     }
 }

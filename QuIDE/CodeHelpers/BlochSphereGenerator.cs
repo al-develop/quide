@@ -13,16 +13,37 @@ public record struct Coord3D(double X, double Y, double Z);
 
 public class BlochSphereGenerator
 {
-    private int _azimuthDegrees = 135;
-    private int _elevationDegrees = 245;
+    public int AzimuthDegrees { get; } = 135;
+    public int ElevationDegrees { get; } = 245;
 
+    private int _azimuthDegrees;
+    private int _elevationDegrees;
+
+    public BlochSphereGenerator()
+    {
+        _azimuthDegrees = AzimuthDegrees;
+        _elevationDegrees = ElevationDegrees;
+    }
+
+    /// <summary>
+    /// Set Camera position to look at the Bloch Sphere
+    /// </summary>
+    /// <param name="horizontal">Horizontal angle to look from (azimuth)</param>
+    /// <param name="vertical">Vertical angle to look from (elevation)</param>
     public void SetViewpoint(int horizontal, int vertical)
     {
         _azimuthDegrees = horizontal == 0 ? _azimuthDegrees : horizontal;
         _elevationDegrees = vertical == 0 ? _elevationDegrees : vertical;
     }
 
-    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int width, int height)
+    /// <summary>
+    /// Generate a square Bloch Sphere Image from Complex arguments. 
+    /// </summary>
+    /// <param name="alpha">Amplitude alpha</param>
+    /// <param name="beta">Amplitude beta</param>
+    /// <param name="imgSize">Size of the image. Used for width and height.</param>
+    /// <returns></returns>
+    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize)
     {
         const double plotLimit = 1.3;
         
@@ -38,10 +59,10 @@ public class BlochSphereGenerator
         DrawAxesAndLabels(plot);
         DrawStateVector(plot, blochVector);
 
-        return plot.GetImage(width, height);
+        return plot.GetImage(imgSize, imgSize);     // Allow only squared images
     }
 
-    public void Normalize(ref Complex alpha, ref Complex beta)
+    private void Normalize(ref Complex alpha, ref Complex beta)
     {
         double magnitude = Math.Sqrt(Math.Pow(alpha.Magnitude, 2) + Math.Pow(beta.Magnitude, 2));
         if (magnitude == 0)
@@ -51,7 +72,7 @@ public class BlochSphereGenerator
     }
 
     // "Mapping" from alpha/beta to "angles" theta/psi to find any point on the surface
-    public Coord3D ConvertToBlochVector(Complex alpha, Complex beta)
+    private Coord3D ConvertToBlochVector(Complex alpha, Complex beta)
     {
         Complex num = 2 * (Complex.Conjugate(alpha) * beta); // conjugate alpha = theta/2
         double real = num.Real;
@@ -60,7 +81,7 @@ public class BlochSphereGenerator
         return new Coord3D(real, imaginary, z);
     }
 
-    public void DrawSphereWireframe(Plot plot)
+    private void DrawSphereWireframe(Plot plot)
     {
         const double negativeHalfPi = -Math.PI / 2;
         const double halfPi = -(negativeHalfPi);
@@ -100,7 +121,7 @@ public class BlochSphereGenerator
         }
     }
 
-    public void DrawAxesAndLabels(Plot plot)
+    private void DrawAxesAndLabels(Plot plot)
     {
         // Axes
         List<Coord3D> X_Axis = new() { new(-1, 0, 0), new(1, 0, 0) };
@@ -120,7 +141,7 @@ public class BlochSphereGenerator
         AddText(plot, "|-i⟩", new Coord3D(0, -1.1, 0));
     }
 
-    public void DrawStateVector(Plot plot, Coord3D vector)
+    private void DrawStateVector(Plot plot, Coord3D vector)
     {
         List<Coord3D> coordinates = new() { new(0, 0, 0), vector };
         Scatter line = Draw3DLine(plot, coordinates, Colors.Red, 3, LinePattern.Solid);
@@ -159,11 +180,11 @@ public class BlochSphereGenerator
     /// </summary>
     private (Coord3D rotated, Coordinates projected) Project(Coord3D coord)
     {
-        // view angles to radiants
+        // convert view angles to radiants
         double azimuth = _azimuthDegrees * Math.PI / 180.0;
         double elevation = _elevationDegrees * Math.PI / 180.0;
 
-        // rotation matrix
+        // apply rotation matrix
         // > around Z-axis (azimuth - horizontal)
         double x_1 = coord.X * Math.Cos(azimuth) - coord.Y * Math.Sin(azimuth);
         double y_1 = coord.X * Math.Sin(azimuth) - coord.Y * Math.Cos(azimuth);
@@ -179,6 +200,11 @@ public class BlochSphereGenerator
         return (result3D, result2D);
     }
 
+    /// <summary>
+    /// Converts the ScottPlot plot image to an Avalonia Bitmap. 
+    /// </summary>
+    /// <param name="plot">A plot image, created through ScottPlot.GetImage(width, height)</param>
+    /// <returns>Avlonia Bitmap, which can be used for UI Bindings</returns>
     public Avalonia.Media.Imaging.Bitmap ToBitmap(ScottPlot.Image plot)
     {
         using (MemoryStream ms = new MemoryStream(plot.GetImageBytes()))

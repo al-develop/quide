@@ -5,8 +5,8 @@
              mc:Ignorable="d"
              xmlns:vm="using:QuIDE.ViewModels.Controls"
              xmlns:controls="clr-namespace:QuIDE.ViewModels.Controls"
-             d:DesignWidth="600"
-             d:DesignHeight="450"
+             d:DesignWidth="400"
+             d:DesignHeight="400"
              x:Class="QuIDE.Views.Controls.BlochSphere"
              x:DataType="controls:BlochSphereViewModel">
     <UserControl.DataContext>
@@ -14,7 +14,7 @@
     </UserControl.DataContext>
 
     <StackPanel>
-        <Image Source="{Binding BlochImage, Mode=TwoWay}" />
+        <Image Source="{Binding BlochImage, Mode=TwoWay}" Width="{Binding ImgWidth}" Height="{Binding ImgHeight}"/>
         <StackPanel Orientation="Horizontal"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Left"

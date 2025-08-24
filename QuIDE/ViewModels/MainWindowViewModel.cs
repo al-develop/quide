@@ -192,13 +192,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _window = window;
         _dialogManager = new DialogManager(_window);
-        BlochSphere = new BlochSphereViewModel();
-        BlochSphere.PropertyChanged += BlochSphereOnPropertyChanged;
         
         // they need dialogManager
         InitFromModel(ComputerModel.CreateModelForGUI());
-
-        CircuitGrid.PropertyChanged += CircuitGridOnPropertyChanged;
+        InitBlochSphereView();
         
         // inject dialogManager and notify handler
         EditorPane = new EditorViewModel(_dialogManager, NotifyEditorDependentCommands);
@@ -206,6 +203,20 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _consoleWriter = new ConsoleWriter();
         _consoleWriter.TextChanged += _consoleWriter_TextChanged;
+    }
+
+    private void InitBlochSphereView()
+    {
+        _blochSphereGenerator = new BlochSphereGenerator();
+        
+        BlochSphere = new BlochSphereViewModel();
+        BlochSphere.HorizontalDegree = _blochSphereGenerator.AzimuthDegrees;
+        BlochSphere.VerticalDegree = _blochSphereGenerator.ElevationDegrees;
+        
+        // when Bloch Sphere sliders are changed or another qubit is selected: 
+        //      regenerate Bloch Image with new arguments
+        BlochSphere.PropertyChanged += BlochSphereOnPropertyChanged;
+        CircuitGrid.PropertyChanged += CircuitGridOnPropertyChanged;
     }
 
     private void CircuitGridOnPropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -253,7 +264,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private ObservableCollection<string> _toolsVM;
     private string _selectedComposite;
-    private BlochSphereGenerator _blochSphereGenerator = new BlochSphereGenerator();
+    private BlochSphereGenerator _blochSphereGenerator;
     
     private ConsoleWriter _consoleWriter;
 
@@ -716,8 +727,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
+            int imgSize = 300;
             _blochSphereGenerator.SetViewpoint(BlochSphere.HorizontalDegree, BlochSphere.VerticalDegree);
-            var plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, 400, 400);
+            var plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize);
+            BlochSphere.SetImageSize(imgSize);
             BlochSphere.BlochImage = _blochSphereGenerator.ToBitmap(plotImg);
             BlochSphere.StateVector = $"α ≈ {alpha.Real:F2} + {alpha.Imaginary:F2}i\nβ ≈ {beta.Real:F2} + {beta.Imaginary:F2}i";
         }
