@@ -208,11 +208,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private void InitBlochSphereView()
     {
         _blochSphereGenerator = new BlochSphereGenerator();
-        
-        BlochSphere = new BlochSphereViewModel();
-        BlochSphere.HorizontalDegree = _blochSphereGenerator.AzimuthDegrees;
-        BlochSphere.VerticalDegree = _blochSphereGenerator.ElevationDegrees;
-        
+        BlochSphere = new BlochSphereViewModel(_blochSphereGenerator.DefaultAzimuthDegrees, _blochSphereGenerator.DefaultElevationDegrees);
+       
         // when Bloch Sphere sliders are changed or another qubit is selected: 
         //      regenerate Bloch Image with new arguments
         BlochSphere.PropertyChanged += BlochSphereOnPropertyChanged;
@@ -227,9 +224,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void BlochSphereOnPropertyChanged(object sender, PropertyChangedEventArgs e)
     {
-        if(e.PropertyName == nameof(BlochSphere.VerticalDegree)
-           || e.PropertyName == nameof(BlochSphere.HorizontalDegree))
+        if (e.PropertyName == nameof(BlochSphere.VerticalDegree)
+            || e.PropertyName == nameof(BlochSphere.HorizontalDegree)
+            || e.PropertyName == nameof(BlochSphere.RenderSize))
+        {
             UpdateBlochSphere();
+        }
     }
 
     private async void WindowClosing(object sender, WindowClosingEventArgs args)
@@ -698,8 +698,7 @@ public partial class MainWindowViewModel : ViewModelBase
         QubitViewModel selectedQubit = CircuitGrid?.SelectedQubit;
         if (selectedQubit == null)
         {
-            BlochSphere.BlochImage = null; // TODO: set to arbitary image with some text
-            BlochSphere.StateVector = "No qubit selected";
+            BlochSphere.ClearImage("No qubit selected.");
             return;
         }
 
@@ -711,14 +710,12 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         Register quantumRegister = parserRegister.SourceRegister;
-
         Register qubitSubRegister = quantumRegister[selectedQubit.Index, 1];
         IReadOnlyDictionary<ulong, Complex> amplitudes = qubitSubRegister.GetAmplitudes();
 
         if (amplitudes == null)
         {
-            BlochSphere.BlochImage = null; // TODO: set to arbitary image with some text
-            BlochSphere.StateVector = "Selected qubit is entangled";
+            BlochSphere.ClearImage("Selected qubit is entangled.");
             return;
         }
 
@@ -727,17 +724,24 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            int imgSize = 300;
+            int imgSize = BlochSphere.RenderSize;
+
+            // Don't render if the control is too small or not yet laid out
+            if (imgSize < 20) 
+            {
+                // clear the image if the area becomes too small
+                BlochSphere.ClearImage("Area too small.");
+                return;
+            }
+           
             _blochSphereGenerator.SetViewpoint(BlochSphere.HorizontalDegree, BlochSphere.VerticalDegree);
             var plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize);
-            BlochSphere.SetImageSize(imgSize);
-            BlochSphere.BlochImage = _blochSphereGenerator.ToBitmap(plotImg);
+            BlochSphere.BlochImage = BlochSphere.ToBitmap(plotImg);
             BlochSphere.StateVector = $"α ≈ {alpha.Real:F2} + {alpha.Imaginary:F2}i\nβ ≈ {beta.Real:F2} + {beta.Imaginary:F2}i";
         }
         catch (Exception ex)
         {
-            BlochSphere.BlochImage = null; // TODO: arbitrary image
-            BlochSphere.StateVector = $"Error generating sphere: {ex.Message}";
+            BlochSphere.ClearImage($"Error generating sphere: {ex.Message}");
         }
     }
 

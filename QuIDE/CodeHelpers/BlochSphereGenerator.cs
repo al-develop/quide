@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Numerics;
-using Microsoft.VisualBasic.CompilerServices;
 using ScottPlot;
 using ScottPlot.Plottables;
 
@@ -13,16 +11,16 @@ public record struct Coord3D(double X, double Y, double Z);
 
 public class BlochSphereGenerator
 {
-    public int AzimuthDegrees { get; } = 135;
-    public int ElevationDegrees { get; } = 245;
+    public int DefaultAzimuthDegrees => 135;
+    public int DefaultElevationDegrees => 245;
 
     private int _azimuthDegrees;
     private int _elevationDegrees;
 
     public BlochSphereGenerator()
     {
-        _azimuthDegrees = AzimuthDegrees;
-        _elevationDegrees = ElevationDegrees;
+        _azimuthDegrees = DefaultAzimuthDegrees;
+        _elevationDegrees = DefaultElevationDegrees;
     }
 
     /// <summary>
@@ -187,7 +185,7 @@ public class BlochSphereGenerator
         // apply rotation matrix
         // > around Z-axis (azimuth - horizontal)
         double x_1 = coord.X * Math.Cos(azimuth) - coord.Y * Math.Sin(azimuth);
-        double y_1 = coord.X * Math.Sin(azimuth) - coord.Y * Math.Cos(azimuth);
+        double y_1 = coord.X * Math.Sin(azimuth) + coord.Y * Math.Cos(azimuth);
         double z_1 = coord.Z;
 
         // > around X-axis (elevation - vertical)
@@ -198,18 +196,5 @@ public class BlochSphereGenerator
         Coord3D result3D = new(x_2, y_2, z_2);
         Coordinates result2D = new(x_2, y_2);
         return (result3D, result2D);
-    }
-
-    /// <summary>
-    /// Converts the ScottPlot plot image to an Avalonia Bitmap. 
-    /// </summary>
-    /// <param name="plot">A plot image, created through ScottPlot.GetImage(width, height)</param>
-    /// <returns>Avlonia Bitmap, which can be used for UI Bindings</returns>
-    public Avalonia.Media.Imaging.Bitmap ToBitmap(ScottPlot.Image plot)
-    {
-        using (MemoryStream ms = new MemoryStream(plot.GetImageBytes()))
-        {
-            return new Avalonia.Media.Imaging.Bitmap(ms);
-        }
     }
 }

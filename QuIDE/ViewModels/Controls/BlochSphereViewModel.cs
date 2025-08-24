@@ -1,4 +1,8 @@
+using System;
+using System.IO;
+using System.Windows.Input;
 using Avalonia.Media.Imaging;
+using QuIDE.CodeHelpers;
 
 namespace QuIDE.ViewModels.Controls;
 
@@ -8,8 +12,9 @@ public class BlochSphereViewModel : ViewModelBase
     private int _horizontalDegree;
     private int _verticalDegree;
     private string _stateVector;
-    private int _imgWidth;
-    private int _imgHeight;
+    private int _renderSize = 400;
+    private readonly int _defaultAzimuthDegrees;
+    private readonly int _defaultElevationDegrees;
 
     public string StateVector
     {
@@ -51,29 +56,62 @@ public class BlochSphereViewModel : ViewModelBase
         }
     }
 
-    public int ImgWidth
+    public int RenderSize
     {
-        get => _imgWidth;
+        get => _renderSize;
         set
         {
-            _imgWidth = value;
-            OnPropertyChanged(nameof(ImgWidth));
+            // Only update if the change is significant to avoid rapid-fire updates
+            if (Math.Abs(_renderSize - value) < 5) 
+                return;
+            
+            _renderSize = value;
+            OnPropertyChanged(nameof(RenderSize));
         }
     }
+    
+    
+    public ICommand ResetViewCmd { get; }
 
-    public int ImgHeight
+
+    public BlochSphereViewModel()
     {
-        get => _imgHeight;
-        set
+        // needed for avalonia binding
+    }
+    
+    public BlochSphereViewModel(int defaultAzimuthDegrees, int defaultElevationDegrees)
+    {
+        ResetViewCmd = new DelegateCommand(ResetView, _ => true);
+        _defaultAzimuthDegrees = defaultAzimuthDegrees;
+        _defaultElevationDegrees = defaultElevationDegrees;
+        ResetView(null);
+    }
+
+    public void ResetView(object obj)
+    {
+        HorizontalDegree = _defaultAzimuthDegrees;
+        VerticalDegree = _defaultElevationDegrees;
+    }
+
+    /// <summary>
+    /// Converts the ScottPlot plot image to an Avalonia Bitmap. 
+    /// </summary>
+    /// <param name="plot">A plot image, created through ScottPlot.GetImage(width, height)</param>
+    /// <returns>Avlonia Bitmap, which can be used for UI Bindings</returns>
+    public Avalonia.Media.Imaging.Bitmap ToBitmap(ScottPlot.Image plot)
+    {
+        if (plot == null)
+            ClearImage("No Bloch Sphere to render");
+        
+        using (MemoryStream ms = new MemoryStream(plot.GetImageBytes()))
         {
-            _imgHeight = value;
-            OnPropertyChanged(nameof(ImgHeight));
+            return new Bitmap(ms);
         }
     }
-
-    public void SetImageSize(int imgSize)
+    
+    public void ClearImage(string message)
     {
-        this.ImgWidth = imgSize;
-        this.ImgHeight = imgSize;
+        BlochImage = null;
+        StateVector = message;
     }
 }
