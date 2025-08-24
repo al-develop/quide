@@ -94,7 +94,7 @@
 			<GridSplitter Classes="verticalSplitter" Grid.Column="1" ResizeDirection="Columns" />
 
 			<!--########################################### Right Column #################################-->
-			<Grid Grid.Column="2" RowDefinitions="1.5*, 2, *, 2, Auto">
+			<Grid Grid.Column="2" RowDefinitions="1.5*, 2, *, 2, *">
 				<!--########################################### OutputGrid ##########################################-->
 				<controls:OutputGrid Grid.Row="0" x:Name="outputGrid" DataContext="{Binding OutputGrid}"
                                      HorizontalAlignment="Stretch" Margin="0" VerticalAlignment="Stretch" />
