@@ -262,7 +262,7 @@
 						</ItemsControl.ItemTemplate>
 					</ItemsControl>
 				</ScrollViewer>
-				<Canvas
+				<Canvas Panel.ZIndex="100"
                     x:Name="drawing"
                     Grid.Column="1"
                     DragDrop.AllowDrop="True"

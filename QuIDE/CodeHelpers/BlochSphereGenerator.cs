@@ -50,8 +50,10 @@ public class BlochSphereGenerator
         Plot plot = new();
         plot.Title("");
         plot.Layout.Frameless();
+        plot.HideGrid();
         plot.Axes.SetLimits(-plotLimit, plotLimit, -plotLimit, plotLimit);
         plot.Axes.Rules.Clear();
+        
         
         DrawSphereWireframe(plot);
         DrawAxesAndLabels(plot);
