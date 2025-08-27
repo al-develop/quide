@@ -13,68 +13,64 @@
         <vm:BlochSphereViewModel />
     </UserControl.DataContext>
 
-    <!-- <StackPanel> -->
-    <!--     <Image Source="{Binding BlochImage, Mode=TwoWay}" Width="{Binding ImgWidth}" Height="{Binding ImgHeight}"/> -->
-    <!--     <StackPanel Orientation="Horizontal" -->
-    <!--                 VerticalAlignment="Center" -->
-    <!--                 HorizontalAlignment="Left" -->
-    <!--                 Margin="0,5,0,0"> -->
-    <!--         <TextBlock Text="Horizontal" Width="70" -->
-    <!--                    VerticalAlignment="Center" -->
-    <!--                    Margin="0,0,10,0" /> -->
-    <!--         <Slider Minimum="1" -->
-    <!--                 Maximum="360" -->
-    <!--                 Width="360" -->
-    <!--                 Margin="0,0,5,0" -->
-    <!--                 Value="{Binding HorizontalDegree}" /> -->
-    <!--         <Label Margin="10,0,0,0" -->
-    <!--                Content="{Binding HorizontalDegree}" /> -->
-    <!--     </StackPanel> -->
-    <!--     <StackPanel Orientation="Horizontal" -->
-    <!--                 VerticalAlignment="Center" -->
-    <!--                 HorizontalAlignment="Left" -->
-    <!--                 Margin="0,5,0,0"> -->
-    <!--         <TextBlock Text="Vertical" Width="70" -->
-    <!--                    VerticalAlignment="Center" -->
-    <!--                    Margin="0,0,10,0" /> -->
-    <!--         <Slider Minimum="1" -->
-    <!--                 Maximum="360" -->
-    <!--                 Width="360" -->
-    <!--                 Margin="0,0,5,0" -->
-    <!--                 Value="{Binding VerticalDegree}" /> -->
-    <!--         <Label Margin="10,0,0,0" -->
-    <!--                Content="{Binding VerticalDegree}" /> -->
-    <!--     </StackPanel> -->
-    <!-- </StackPanel> -->
-    
-    <!-- Responsive Bloch Sphere -->
     <Grid RowDefinitions="*, Auto">
         <Image Grid.Row="0"
-               x:Name="BlochSphereImage" 
+               x:Name="BlochSphereImage"
                Source="{Binding BlochImage}"
-               Stretch="Uniform" 
-               Margin="5"/>
-        
-        <StackPanel Grid.Row="1" Margin="5,0,5,5">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,5,0,0" HorizontalAlignment="Stretch">
-                <TextBlock Text="Horizontal" Width="70" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <Slider Minimum="1" Maximum="360" MinWidth="360" Value="{Binding HorizontalDegree}" />
-                <Label Margin="10,0,0,0" Content="{Binding HorizontalDegree}" />
+               Stretch="Uniform"
+               Margin="5" />
+
+        <StackPanel Grid.Row="1"
+                    Margin="5,0,5,0">
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="0,5,0,0"
+                        HorizontalAlignment="Stretch">
+                <TextBlock Text="Horizontal"
+                           Width="70"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0" />
+                <Slider Minimum="1"
+                        Maximum="360"
+                        MinWidth="360"
+                        Value="{Binding HorizontalDegree}" />
+                <Label Margin="10,0,0,0"
+                       Content="{Binding HorizontalDegree}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,5,0,0" HorizontalAlignment="Stretch">
-                <TextBlock Text="Vertical" Width="70" VerticalAlignment="Center" Margin="0,0,10,0" />
-                <Slider Minimum="1" Maximum="360" MinWidth="360" Value="{Binding VerticalDegree}" />
-                <Label Margin="10,0,0,0" Content="{Binding VerticalDegree}" />
+
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="0,0,0,0"
+                        HorizontalAlignment="Stretch">
+                <TextBlock Text="Vertical"
+                           Width="70"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0" />
+                <Slider Minimum="1"
+                        Maximum="360"
+                        MinWidth="360"
+                        Value="{Binding VerticalDegree}" />
+                <Label Margin="10,0,0,0"
+                       Content="{Binding VerticalDegree}" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,5,0,0" HorizontalAlignment="Stretch">
+
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="0,5,0,0"
+                        HorizontalAlignment="Stretch">
                 <Button Command="{Binding ResetView}">
                     <Border BorderBrush="DimGray"
-                        BorderThickness="1"
-                        Padding="3">
-                        <TextBlock Text="Reset Viewpoint"/>
+                            BorderThickness="1"
+                            Padding="3">
+                        <TextBlock Text="Reset Viewpoint" />
                     </Border>
                 </Button>
+                
+                <Label Content="{Binding StateVector}"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center" />
             </StackPanel>
+
         </StackPanel>
     </Grid>
 </UserControl>
