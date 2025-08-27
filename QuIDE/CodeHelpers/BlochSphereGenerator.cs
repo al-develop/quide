@@ -54,7 +54,6 @@ public class BlochSphereGenerator
         plot.Axes.SetLimits(-plotLimit, plotLimit, -plotLimit, plotLimit);
         plot.Axes.Rules.Clear();
         
-        
         DrawSphereWireframe(plot);
         DrawAxesAndLabels(plot);
         DrawStateVector(plot, blochVector);
@@ -198,5 +197,28 @@ public class BlochSphereGenerator
         Coord3D result3D = new(x_2, y_2, z_2);
         Coordinates result2D = new(x_2, y_2);
         return (result3D, result2D);
+    }
+    
+    public static ScottPlot.Image GeneratePlaceholder(int imgSize, string text)
+    {
+        var plot = new Plot();
+
+        // uniform gray background
+        var bg = new ScottPlot.Color(211, 211, 211, 100);
+        plot.FigureBackground.Color = bg; // outside the data area
+        plot.DataBackground.Color = bg;   // inside the data area
+
+        // hide axes/ticks/frame
+        plot.Axes.Frameless();
+        plot.Axes.SetLimits(0, 1, 0, 1);
+        plot.HideGrid();
+
+        // centered text
+        var label = plot.Add.Text(text, 0.5, 0.5);
+        label.Alignment = Alignment.MiddleCenter;
+        label.Color = new ScottPlot.Color(60, 60, 60);
+        label.FontSize = 24;
+        
+        return plot.GetImage(imgSize, imgSize);
     }
 }

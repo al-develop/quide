@@ -101,7 +101,7 @@ public class BlochSphereViewModel : ViewModelBase
     public Avalonia.Media.Imaging.Bitmap ToBitmap(ScottPlot.Image plot)
     {
         if (plot == null)
-            ClearImage("No Bloch Sphere to render");
+            ClearImage("No Image to render");
         
         using (MemoryStream ms = new MemoryStream(plot.GetImageBytes()))
         {
@@ -111,7 +111,7 @@ public class BlochSphereViewModel : ViewModelBase
     
     public void ClearImage(string message)
     {
-        BlochImage = null;
+        BlochImage = ToBitmap(BlochSphereGenerator.GeneratePlaceholder(RenderSize, message));
         StateVector = message;
     }
 }
