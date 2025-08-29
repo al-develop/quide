@@ -30,8 +30,21 @@ public class BlochSphereGenerator
     /// <param name="vertical">Vertical angle to look from (elevation)</param>
     public void SetViewpoint(int horizontal, int vertical)
     {
-        _azimuthDegrees = horizontal == 0 ? _azimuthDegrees : horizontal;
-        _elevationDegrees = vertical == 0 ? _elevationDegrees : vertical;
+        _azimuthDegrees = Mod360(horizontal);
+        _elevationDegrees = Mod360(vertical);
+    }
+
+    /// <summary>
+    /// Helper method, to normalize rotation degrees to 0 - 360
+    /// </summary>
+    public static int Mod360(int degree)
+    {
+        degree %= 360;
+        if (degree < 0) 
+            degree += 360;
+        
+        var result = (degree == 0) ? 360 : degree;
+        return result;
     }
 
     /// <summary>
@@ -225,7 +238,7 @@ public class BlochSphereGenerator
         var label = plot.Add.Text(text, 0.5, 0.5);
         label.Alignment = Alignment.MiddleCenter;
         label.Color = new ScottPlot.Color(60, 60, 60);
-        label.FontSize = 24;
+        label.FontSize = 18;
         
         return plot.GetImage(imgSize, imgSize);
     }

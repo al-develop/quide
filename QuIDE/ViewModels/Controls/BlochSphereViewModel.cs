@@ -70,9 +70,7 @@ public class BlochSphereViewModel : ViewModelBase
         }
     }
     
-    
     public ICommand ResetViewCmd { get; }
-
 
     public BlochSphereViewModel()
     {

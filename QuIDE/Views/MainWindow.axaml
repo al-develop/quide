@@ -6,7 +6,7 @@
         xmlns:p="clr-namespace:QuIDE.Properties"
         xmlns:controls="clr-namespace:QuIDE.Views.Controls"
         xmlns:drawing="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="800"
         x:Class="QuIDE.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="QuIDE - Quantum Integrated Development Environment"
@@ -113,7 +113,7 @@
 				</ScrollViewer>
 				
 				<GridSplitter Classes="horizontalSplitter" Grid.Row="3" ResizeDirection="Rows" />
-				<controls:BlochSphere Grid.Row="4" DataContext="{Binding BlochSphere}" Margin="5"/>
+				<controls:BlochSphere Grid.Row="4" DataContext="{Binding BlochSphere}" Margin="5" />
 			</Grid>
 		</Grid>
 	</DockPanel>
