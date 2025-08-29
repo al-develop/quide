@@ -30,6 +30,11 @@ public class OutputGridViewModel : ViewModelBase
         _selectedRegister = new ParameterViewModel("register", typeof(Register), "root");
     }
 
+    public void SetMainViewModel(MainWindowViewModel mainVm)
+    {
+        this._mainVM = mainVm;
+    }
+    
     #endregion // Constructor
 
     #region Events
@@ -44,7 +49,8 @@ public class OutputGridViewModel : ViewModelBase
     #endregion // Events
 
     #region Fields
-
+    private MainWindowViewModel _mainVM;
+    
     private ComputerModel _model;
     private OutputViewModel _outputModel;
 
@@ -80,7 +86,6 @@ public class OutputGridViewModel : ViewModelBase
         get
         {
             if (_selectedIndex >= 0 && _selectedIndex < States.Length) return States[_selectedIndex].Model;
-
             return null;
         }
     }
@@ -93,6 +98,7 @@ public class OutputGridViewModel : ViewModelBase
             _selectedIndex = value;
             OnPropertyChanged(nameof(SelectedIndex));
             OnSelectionChanged();
+            this._mainVM.UpdateBlochSphere();
         }
     }
 

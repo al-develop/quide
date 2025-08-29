@@ -85,6 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 _outputGridVM = new OutputGridViewModel();
                 _outputGridVM.LoadModel(_model, _outputModel);
+                _outputGridVM.SetMainViewModel(this);
                 if (_circuitGridVM != null) _outputGridVM.AddQubitsTracing(_circuitGridVM);
 
                 if (_propertiesVM != null) _propertiesVM.AddSelectionTracing(_outputGridVM);
@@ -693,7 +694,7 @@ public partial class MainWindowViewModel : ViewModelBase
         await new AboutWindow().ShowDialog(_window);
     }
 
-    private void UpdateBlochSphere()
+    public void UpdateBlochSphere()
     {
         QubitViewModel selectedQubit = CircuitGrid?.SelectedQubit;
         if (selectedQubit == null)
@@ -733,9 +734,13 @@ public partial class MainWindowViewModel : ViewModelBase
                 BlochSphere.ClearImage("Area too small.");
                 return;
             }
-           
+
+            var phase = _outputGridVM.SelectedObject.Amplitude;
+            var converter = new AmplitudeColorConverter();
+            var brush = converter.Convert(phase, null, null, null) as Avalonia.Media.SolidColorBrush;
+            
             _blochSphereGenerator.SetViewpoint(BlochSphere.HorizontalDegree, BlochSphere.VerticalDegree);
-            var plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize);
+            var plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize, brush.Color.ToUInt32());
             BlochSphere.BlochImage = BlochSphere.ToBitmap(plotImg);
             BlochSphere.StateVector = $"α ≈ {alpha.Real:F2} + {alpha.Imaginary:F2}i\nβ ≈ {beta.Real:F2} + {beta.Imaginary:F2}i";
         }

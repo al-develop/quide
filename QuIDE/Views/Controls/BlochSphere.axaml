@@ -14,7 +14,7 @@
     </UserControl.DataContext>
 
     <Grid RowDefinitions="*, Auto">
-        <Image Grid.Row="0"
+        <Image Grid.Row="0" PointerMoved="BlochSphereImage_OnPointerMoved"
                x:Name="BlochSphereImage"
                Source="{Binding BlochImage}"
                Stretch="Uniform"

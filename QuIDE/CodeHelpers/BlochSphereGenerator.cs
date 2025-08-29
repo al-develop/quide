@@ -41,7 +41,7 @@ public class BlochSphereGenerator
     /// <param name="beta">Amplitude beta</param>
     /// <param name="imgSize">Size of the image. Used for width and height.</param>
     /// <returns></returns>
-    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize)
+    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize, uint phaseColor)
     {
         const double plotLimit = 1.3;
         
@@ -56,7 +56,7 @@ public class BlochSphereGenerator
         
         DrawSphereWireframe(plot);
         DrawAxesAndLabels(plot);
-        DrawStateVector(plot, blochVector);
+        DrawStateVector(plot, blochVector, phaseColor);
 
         return plot.GetImage(imgSize, imgSize);     // Allow only squared images
     }
@@ -140,14 +140,16 @@ public class BlochSphereGenerator
         AddText(plot, "|-i⟩", new Coord3D(0, -1.1, 0));
     }
 
-    private void DrawStateVector(Plot plot, Coord3D vector)
+    private void DrawStateVector(Plot plot, Coord3D vector, uint phaseColor)
     {
-        List<Coord3D> coordinates = new() { new(0, 0, 0), vector };
-        Scatter line = Draw3DLine(plot, coordinates, Colors.Red, 3, LinePattern.Solid, true);
-        var (_, projectedEnd) = Project(vector);
+        Color fillStyleColor = ScottPlot.Color.FromARGB(phaseColor);
         
+        List<Coord3D> coordinates = new() { new(0, 0, 0), vector };
+        Draw3DLine(plot, coordinates, fillStyleColor, 3, LinePattern.Solid, true);
+        
+        var (_, projectedEnd) = Project(vector);
         Marker arrowHead = plot.Add.Marker(projectedEnd);
-        arrowHead.MarkerStyle.FillStyle.Color = Colors.Red;
+        arrowHead.MarkerStyle.FillStyle.Color = fillStyleColor;
         arrowHead.MarkerStyle.Shape = MarkerShape.FilledTriangleUp;
         arrowHead.MarkerStyle.Size = 7f;
     }
