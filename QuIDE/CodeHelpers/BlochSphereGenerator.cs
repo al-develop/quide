@@ -143,15 +143,16 @@ public class BlochSphereGenerator
     private void DrawStateVector(Plot plot, Coord3D vector)
     {
         List<Coord3D> coordinates = new() { new(0, 0, 0), vector };
-        Scatter line = Draw3DLine(plot, coordinates, Colors.Red, 3, LinePattern.Solid);
+        Scatter line = Draw3DLine(plot, coordinates, Colors.Red, 3, LinePattern.Solid, true);
         var (_, projectedEnd) = Project(vector);
-        var arrowHead = plot.Add.Marker(projectedEnd);
+        
+        Marker arrowHead = plot.Add.Marker(projectedEnd);
         arrowHead.MarkerStyle.FillStyle.Color = Colors.Red;
         arrowHead.MarkerStyle.Shape = MarkerShape.FilledTriangleUp;
         arrowHead.MarkerStyle.Size = 7f;
     }
 
-    private Scatter Draw3DLine(Plot plot, List<Coord3D> points3d, Color color, float lineWidth, LinePattern pattern)
+    private Scatter Draw3DLine(Plot plot, List<Coord3D> points3d, Color color, float lineWidth, LinePattern pattern, bool ignoreDepth = false)
     {
         // Project 3D to 2D -> create illusion of 3D on a 2D plane
         var projectedPoints = points3d.Select(s => Project(s).projected).ToList();
@@ -160,7 +161,12 @@ public class BlochSphereGenerator
         var scatter = plot.Add.Scatter(projectedPoints);
         scatter.Color = color;
         scatter.LineWidth = lineWidth;
-        scatter.LinePattern = (avgDepth < -0.1) ? LinePattern.Dotted : pattern;
+
+        if (ignoreDepth)
+            scatter.LinePattern = pattern;
+        else
+            scatter.LinePattern = (avgDepth < -0.1) ? LinePattern.Dotted : pattern;
+
         scatter.MarkerSize = 0;
         return scatter;
     }
