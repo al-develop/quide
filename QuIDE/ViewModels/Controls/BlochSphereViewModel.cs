@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows.Input;
 using Avalonia.Media.Imaging;
 using QuIDE.CodeHelpers;
+using QuIDE.Properties;
 
 namespace QuIDE.ViewModels.Controls;
 
@@ -99,7 +100,7 @@ public class BlochSphereViewModel : ViewModelBase
     public Avalonia.Media.Imaging.Bitmap ToBitmap(ScottPlot.Image plot)
     {
         if (plot == null)
-            ClearImage("No Image to render");
+            ClearImage(Resources.NoImg);
         
         using (MemoryStream ms = new MemoryStream(plot.GetImageBytes()))
         {

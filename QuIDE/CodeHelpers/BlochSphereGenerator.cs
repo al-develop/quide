@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Resources;
+using QuIDE.Properties;
 using ScottPlot;
 using ScottPlot.Plottables;
 
@@ -145,12 +147,13 @@ public class BlochSphereGenerator
         Draw3DLine(plot, Z_Axis, Colors.Gray, 1, LinePattern.DenselyDashed);
 
         // Labels
-        AddText(plot, "|0⟩", new Coord3D(0, 0, 1.1));
-        AddText(plot, "|1⟩", new Coord3D(0, 0, -1.1));
-        AddText(plot, "|+⟩", new Coord3D(1.1, 0, 0));
-        AddText(plot, "|–⟩", new Coord3D(-1.1, 0, 0));
-        AddText(plot, "|i⟩", new Coord3D(0, 1.1, 0));
-        AddText(plot, "|-i⟩", new Coord3D(0, -1.1, 0));
+        // static labels work well with 1.1 instead of 1.25
+        AddText(plot, Resources.KetZero, new Coord3D(0, 0, 1.25));
+        AddText(plot, Resources.KetOne, new Coord3D(0, 0, -1.25));
+        AddText(plot, Resources.KetPlus, new Coord3D(1.25, 0, 0));
+        AddText(plot, Resources.KetMinus, new Coord3D(-1.25, 0, 0));
+        AddText(plot, Resources.KetPositive_I, new Coord3D(0, 1.25, 0));
+        AddText(plot, Resources.KetNegative_I, new Coord3D(0, -1.25, 0));
     }
 
     private void DrawStateVector(Plot plot, Coord3D vector, uint phaseColor)
@@ -190,7 +193,7 @@ public class BlochSphereGenerator
     {
         var (_, projectedPos) = Project(position);
         var label = plt.Add.Text(text, projectedPos);
-        label.LabelStyle.FontSize = 18;
+        label.LabelStyle.FontSize = 16;
         label.LabelStyle.Bold = true;
         label.LabelStyle.Alignment = Alignment.MiddleCenter;
     }
@@ -237,8 +240,8 @@ public class BlochSphereGenerator
         // centered text
         var label = plot.Add.Text(text, 0.5, 0.5);
         label.Alignment = Alignment.MiddleCenter;
-        label.Color = new ScottPlot.Color(60, 60, 60);
-        label.FontSize = 18;
+        label.LabelFontColor = new ScottPlot.Color(60, 60, 60);
+        label.LabelFontSize = 18;
         
         return plot.GetImage(imgSize, imgSize);
     }

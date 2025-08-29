@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
+using System.Resources;
 using System.Windows.Input;
 using Avalonia.Controls;
 using QuIDE.CodeHelpers;
@@ -12,6 +13,7 @@ using QuIDE.ViewModels.Dialog;
 using QuIDE.Views;
 using QuIDE.Views.Dialog;
 using CommunityToolkit.Mvvm.Input;
+using QuIDE.Properties;
 using QuIDE.QuantumModel;
 using QuIDE.QuantumParser;
 using QuIDE.ViewModels.Helpers;
@@ -699,7 +701,7 @@ public partial class MainWindowViewModel : ViewModelBase
         QubitViewModel selectedQubit = CircuitGrid?.SelectedQubit;
         if (selectedQubit == null)
         {
-            BlochSphere.ClearImage("No qubit selected.");
+            BlochSphere.ClearImage(Resources.NoQubit);
             return;
         }
 
@@ -716,7 +718,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (amplitudes == null)
         {
-            BlochSphere.ClearImage("Selected qubit is entangled.");
+            BlochSphere.ClearImage(Resources.QubitEntanlged);
             return;
         }
 
@@ -731,7 +733,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (imgSize < 20) 
             {
                 // clear the image if the area becomes too small
-                BlochSphere.ClearImage("Area too small.");
+                BlochSphere.ClearImage(Resources.AreaTooSmall);
                 return;
             }
 
