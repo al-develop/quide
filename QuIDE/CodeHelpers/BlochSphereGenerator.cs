@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Resources;
+using Avalonia.Platform;
 using QuIDE.Properties;
 using ScottPlot;
 using ScottPlot.Plottables;
+using SkiaSharp;
 
 namespace QuIDE.CodeHelpers;
 
@@ -146,14 +148,15 @@ public class BlochSphereGenerator
         Draw3DLine(plot, Y_Axis, Colors.Gray, 1, LinePattern.DenselyDashed);
         Draw3DLine(plot, Z_Axis, Colors.Gray, 1, LinePattern.DenselyDashed);
 
-        // Labels
-        // static labels work well with 1.1 instead of 1.25
-        AddText(plot, Resources.KetZero, new Coord3D(0, 0, 1.25));
-        AddText(plot, Resources.KetOne, new Coord3D(0, 0, -1.25));
-        AddText(plot, Resources.KetPlus, new Coord3D(1.25, 0, 0));
-        AddText(plot, Resources.KetMinus, new Coord3D(-1.25, 0, 0));
-        AddText(plot, Resources.KetPositive_I, new Coord3D(0, 1.25, 0));
-        AddText(plot, Resources.KetNegative_I, new Coord3D(0, -1.25, 0));
+        // Labels1
+        // 1.1
+        SKTypeface typeface = LoadTypeface();
+        AddText(plot, Resources.KetZero, new Coord3D(0, 0, 0.9), typeface);
+        AddText(plot, Resources.KetOne, new Coord3D(0, 0, -1.4), typeface);
+        AddText(plot, Resources.KetPlus, new Coord3D(1.1, 0, -0.25), typeface);
+        AddText(plot, Resources.KetMinus, new Coord3D(-1.1, 0, -0.25), typeface);
+        AddText(plot, Resources.KetPositive_I, new Coord3D(0, 1.1, -0.25), typeface);
+        AddText(plot, Resources.KetNegative_I, new Coord3D(0, -1.1, -0.25), typeface);
     }
 
     private void DrawStateVector(Plot plot, Coord3D vector, uint phaseColor)
@@ -189,13 +192,36 @@ public class BlochSphereGenerator
         return scatter;
     }
 
-    private void AddText(Plot plt, string text, Coord3D position)
+    private void AddText(Plot plt, string text, Coord3D position, SKTypeface typeface)
     {
         var (_, projectedPos) = Project(position);
         var label = plt.Add.Text(text, projectedPos);
         label.LabelStyle.FontSize = 16;
         label.LabelStyle.Bold = true;
         label.LabelStyle.Alignment = Alignment.MiddleCenter;
+        label.LabelStyle.FontName = typeface.FamilyName;
+    }
+
+    /// <summary>
+    /// Loads the .ttf resource which is needed to display mathematical notation
+    /// </summary>
+    /// <returns></returns>
+    private static SKTypeface LoadTypeface()
+    {
+        SKTypeface skTypeface = null;
+        try
+        {
+            var asmName = typeof(App).Assembly.GetName().Name;
+            var uri = new Uri($"avares://{asmName}/Assets/NotoSansMath-Regular.ttf");
+            using var s = AssetLoader.Open(uri);
+            skTypeface = SKTypeface.FromStream(s);
+            return skTypeface;
+        }
+        catch
+        {
+            skTypeface?.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
