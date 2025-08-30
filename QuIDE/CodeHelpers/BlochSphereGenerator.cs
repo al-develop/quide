@@ -44,9 +44,9 @@ public class BlochSphereGenerator
     public static int Mod360(int degree)
     {
         degree %= 360;
-        if (degree < 0) 
+        if (degree < 0)
             degree += 360;
-        
+
         var result = (degree == 0) ? 360 : degree;
         return result;
     }
@@ -58,12 +58,46 @@ public class BlochSphereGenerator
     /// <param name="beta">Amplitude beta</param>
     /// <param name="imgSize">Size of the image. Used for width and height.</param>
     /// <returns></returns>
-    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize, uint phaseColor)
+    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize, uint vectorColor)
     {
-        const double plotLimit = 1.3;
-        
         Normalize(ref alpha, ref beta);
         Coord3D blochVector = ConvertToBlochVector(alpha, beta);
+        return GetPlotFromComplexAmplitudes(imgSize, vectorColor, blochVector);
+        
+        // const double plotLimit = 1.3;
+        // Plot plot = new();
+        // plot.Title("");
+        // plot.Layout.Frameless();
+        // plot.HideGrid();
+        // plot.Axes.SetLimits(-plotLimit, plotLimit, -plotLimit, plotLimit);
+        // plot.Axes.Rules.Clear();
+        //
+        // DrawSphereWireframe(plot);
+        // DrawAxesAndLabels(plot);
+        // DrawStateVector(plot, blochVector, phaseColor);
+        //
+        // return plot.GetImage(imgSize, imgSize); // Allow only squared images
+        
+    }
+
+    /// <summary>
+    /// Generate a square Bloch Sphere Image from a 2x2 density matrix.
+    /// This method calculates the Bloch vector from the density matrix and renders it.
+    /// </summary>
+    /// <param name="densityMatrix">The 2x2 complex density matrix of the qubit.</param>
+    /// <param name="imgSize">Size of the image. Used for width and height.</param>
+    /// <param name="vectorColor">Color used for the state vector.</param>
+    /// <returns>A ScottPlot.Image representing the Bloch Sphere with the state vector.</returns>
+    public ScottPlot.Image GeneratePlot(Complex[,] densityMatrix, int imgSize, uint vectorColor)
+    {
+        // Define the plotting limits for the sphere.
+        Coord3D blochVector = ConvertToBlochVector(densityMatrix);
+        return GetPlotFromComplexAmplitudes(imgSize, vectorColor, blochVector);
+    }
+
+    private Image GetPlotFromComplexAmplitudes(int imgSize, uint vectorColor, Coord3D blochVector)
+    {
+        const double plotLimit = 1.3;
         Plot plot = new();
         plot.Title("");
         plot.Layout.Frameless();
@@ -73,9 +107,9 @@ public class BlochSphereGenerator
         
         DrawSphereWireframe(plot);
         DrawAxesAndLabels(plot);
-        DrawStateVector(plot, blochVector, phaseColor);
-
-        return plot.GetImage(imgSize, imgSize);     // Allow only squared images
+        DrawStateVector(plot, blochVector, vectorColor);
+        
+        return plot.GetImage(imgSize, imgSize);
     }
 
     private void Normalize(ref Complex alpha, ref Complex beta)
@@ -97,6 +131,23 @@ public class BlochSphereGenerator
         return new Coord3D(real, imaginary, z);
     }
 
+    /// <summary>
+    /// Converts a 2x2 density matrix into a Bloch vector (x, y, z) coordinates.
+    /// </summary>
+    /// <param name="densityMatrix">The 2x2 complex density matrix. Assumed to be trace-normalized.</param>
+    /// <returns>A Coord3D representing the Bloch vector. Its magnitude will be less than or equal to 1.</returns>
+    private Coord3D ConvertToBlochVector(Complex[,] densityMatrix)
+    {
+        double x = 2 * densityMatrix[0, 1].Real;
+        double y = 2 * densityMatrix[0, 1].Imaginary;
+        double z = densityMatrix[0, 0].Real - densityMatrix[1, 1].Real;
+
+        // The resulting Bloch vector accurately represents pure states (on the surface) and mixed states (inside).
+        // No further normalization of the vector is needed here, as the density matrix is assumed to be normalized.
+        return new Coord3D(x, y, z);
+    }
+    
+    
     private void DrawSphereWireframe(Plot plot)
     {
         const double negativeHalfPi = -Math.PI / 2;
@@ -162,10 +213,10 @@ public class BlochSphereGenerator
     private void DrawStateVector(Plot plot, Coord3D vector, uint phaseColor)
     {
         Color fillStyleColor = ScottPlot.Color.FromARGB(phaseColor);
-        
+
         List<Coord3D> coordinates = new() { new(0, 0, 0), vector };
         Draw3DLine(plot, coordinates, fillStyleColor, 3, LinePattern.Solid, true);
-        
+
         var (_, projectedEnd) = Project(vector);
         Marker arrowHead = plot.Add.Marker(projectedEnd);
         arrowHead.MarkerStyle.FillStyle.Color = fillStyleColor;
@@ -248,7 +299,7 @@ public class BlochSphereGenerator
         Coordinates result2D = new(x_2, y_2);
         return (result3D, result2D);
     }
-    
+
     public static ScottPlot.Image GeneratePlaceholder(int imgSize, string text)
     {
         var plot = new Plot();
@@ -256,7 +307,7 @@ public class BlochSphereGenerator
         // uniform gray background
         var bg = new ScottPlot.Color(211, 211, 211, 100);
         plot.FigureBackground.Color = bg; // outside the data area
-        plot.DataBackground.Color = bg;   // inside the data area
+        plot.DataBackground.Color = bg; // inside the data area
 
         // hide axes/ticks/frame
         plot.Axes.Frameless();
@@ -268,7 +319,7 @@ public class BlochSphereGenerator
         label.Alignment = Alignment.MiddleCenter;
         label.LabelFontColor = new ScottPlot.Color(60, 60, 60);
         label.LabelFontSize = 18;
-        
+
         return plot.GetImage(imgSize, imgSize);
     }
 }

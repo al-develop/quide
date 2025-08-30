@@ -698,59 +698,139 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public void UpdateBlochSphere()
     {
+        // Get the currently selected qubit from the circuit grid.
         QubitViewModel selectedQubit = CircuitGrid?.SelectedQubit;
         if (selectedQubit == null)
         {
-            BlochSphere.ClearImage(Resources.NoQubit);
+            BlochSphere.ClearImage(Resources.NoQubit); // Display placeholder if no qubit is selected.
             return;
         }
 
+        // Obtain instances of the quantum computer and parser.
         CircuitEvaluator eval = CircuitEvaluator.GetInstance();
         QuantumComputer qc = QuantumComputer.GetInstance();
-
-        var parserRegister = qc.FindRegister(selectedQubit.RegisterName);
+       
+        // Find the quantum register corresponding to the selected qubit's register name.
+        QuantumParser.Register parserRegister = qc.FindRegister(selectedQubit.RegisterName);
         if(parserRegister == null)
             return;
-
+        
         Register quantumRegister = parserRegister.SourceRegister;
+        // Create a sub-register reference for the single selected qubit.
         Register qubitSubRegister = quantumRegister[selectedQubit.Index, 1];
+
+        // Attempt to get the amplitudes (alpha, beta) for the selected qubit.
+        // This will return null if the qubit is entangled (in a mixed state).
         IReadOnlyDictionary<ulong, Complex> amplitudes = qubitSubRegister.GetAmplitudes();
 
+        Complex[,] densityMatrix = null; // Initialize density matrix to null.
+        
         if (amplitudes == null)
         {
-            BlochSphere.ClearImage(Resources.QubitEntanlged);
+            // entangled: calculate the reduced density matrix for the selected qubit.
+            try
+            {
+                densityMatrix = qubitSubRegister.GetReducedDensityMatrix();
+            }
+            catch (ArgumentException ex)
+            {
+                BlochSphere.ClearImage($"Error: {ex.Message}");
+                return;
+            }
+            
+            if (densityMatrix == null) // safety check; GetReducedDensityMatrix should return a matrix or throw an exception.
+            {
+                BlochSphere.ClearImage(Resources.QubitEntanlged); // Display specific message for entanglement.
+                return;
+            }
+        }
+        else
+        {
+            // not entangled: qubit is in a pure state. Extract alpha and beta amplitudes.
+            amplitudes.TryGetValue(0, out Complex alpha);
+            amplitudes.TryGetValue(1, out Complex beta);
+
+            if (alpha == Complex.Zero && beta == Complex.Zero) 
+            {
+                 BlochSphere.ClearImage(Resources.NoQubit);
+                 return;
+            }
+
+            // Proceed to render the pure state Bloch sphere using alpha and beta.
+            try
+            {
+                int imgSize = BlochSphere.RenderSize;
+                // Don't render if the control is too small or not yet laid out.
+                if (imgSize < 20)
+                {
+                    BlochSphere.ClearImage(Resources.AreaTooSmall);
+                    return;
+                }
+                
+                // Get the phase color from the selected object (if available).
+                var phase = _outputGridVM.SelectedObject.Amplitude;
+                var converter = new AmplitudeColorConverter();
+                var brush = converter.Convert(phase, null, null, null) as Avalonia.Media.SolidColorBrush;
+                uint color = brush.Color.ToUInt32();
+
+                // Set the viewpoint and generate the plot using the pure state method.
+                _blochSphereGenerator.SetViewpoint(BlochSphere.HorizontalDegree, BlochSphere.VerticalDegree);
+                var plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize, color);
+                BlochSphere.BlochImage = BlochSphere.ToBitmap(plotImg);
+                
+                // Update the state vector display for pure states.
+                BlochSphere.StateVector = $"α ≈ {alpha.Real:F2} + {alpha.Imaginary:F2}i\nβ ≈ {beta.Real:F2} + {beta.Imaginary:F2}i";
+            }
+            catch (Exception ex)
+            {
+                BlochSphere.ClearImage($"Error generating sphere: {ex.Message}");
+            }
+            
             return;
         }
 
-        amplitudes.TryGetValue(0, out Complex alpha);
-        amplitudes.TryGetValue(1, out Complex beta);
-
+        // This block is reached ONLY if the qubit is in a mixed state (amplitudes == null and densityMatrix is not null).
         try
         {
             int imgSize = BlochSphere.RenderSize;
-
-            // Don't render if the control is too small or not yet laid out
-            if (imgSize < 20) 
+            if (imgSize < 20)
             {
-                // clear the image if the area becomes too small
                 BlochSphere.ClearImage(Resources.AreaTooSmall);
                 return;
             }
 
-            var phase = _outputGridVM.SelectedObject.Amplitude;
-            var converter = new AmplitudeColorConverter();
-            var brush = converter.Convert(phase, null, null, null) as Avalonia.Media.SolidColorBrush;
-            
+            // For mixed states, the concept of a single 'phase' color is less straightforward.
+            // Use a default color (red) or fall back to selected object's amplitude color if available.
+            uint vectorColor = Avalonia.Media.Colors.Red.ToUInt32();
+            if (_outputGridVM.SelectedObject != null)
+            {
+                var phase = _outputGridVM.SelectedObject.Amplitude;
+                var converter = new AmplitudeColorConverter();
+                var brush = converter.Convert(phase, null, null, null) as Avalonia.Media.SolidColorBrush;
+                vectorColor = brush.Color.ToUInt32();
+            }
+
+            // Set the viewpoint and generate the plot using the density matrix variant of GeneratePlot.
             _blochSphereGenerator.SetViewpoint(BlochSphere.HorizontalDegree, BlochSphere.VerticalDegree);
-            var plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize, brush.Color.ToUInt32());
+            var plotImg = _blochSphereGenerator.GeneratePlot(densityMatrix, imgSize, vectorColor);
             BlochSphere.BlochImage = BlochSphere.ToBitmap(plotImg);
-            BlochSphere.StateVector = $"α ≈ {alpha.Real:F2} + {alpha.Imaginary:F2}i\nβ ≈ {beta.Real:F2} + {beta.Imaginary:F2}i";
+
+            // Display the density matrix elements and the derived Bloch vector components.
+            // This provides more information for mixed states.
+            double x = 2 * densityMatrix[0, 1].Real;
+            double y = 2 * densityMatrix[0, 1].Imaginary;
+            double z = densityMatrix[0, 0].Real - densityMatrix[1, 1].Real;
+            BlochSphere.StateVector = $"ρ₀₀ = {densityMatrix[0,0].Real:F2}\n" +
+                                      $"ρ₁₁ = {densityMatrix[1,1].Real:F2}\n" +
+                                      $"ρ₀₁ = {densityMatrix[0,1].Real:F2} + {densityMatrix[0,1].Imaginary:F2}i\n" +
+                                      $"Bloch Vector: (x={x:F2}, y={y:F2}, z={z:F2})";
         }
         catch (Exception ex)
         {
             BlochSphere.ClearImage($"Error generating sphere: {ex.Message}");
         }
     }
+    
 
     #region Private Helpers
 
