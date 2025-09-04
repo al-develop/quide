@@ -294,6 +294,7 @@ public class Register : IRegister
     internal Complex[,] CalculateReducedDensityMatrixForQubit(int targetQubitOffsetInRoot)
     {
         // Initialize the components of the 2x2 density matrix.
+        // rho10 is complex conjugate of 01 and implicitly clear
         Complex rho00 = Complex.Zero;
         Complex rho11 = Complex.Zero;
         Complex rho01 = Complex.Zero;
@@ -310,6 +311,7 @@ public class Register : IRegister
         Dictionary<ulong, Complex> amplitudesOfRestWithQubit0 = new Dictionary<ulong, Complex>();
         Dictionary<ulong, Complex> amplitudesOfRestWithQubit1 = new Dictionary<ulong, Complex>();
 
+        // diagonals (rho00 and rho11)
         // Iterate through all basis states and their amplitudes in the full system state vector.
         foreach (var entry in _amplitudes)
         {
@@ -1459,6 +1461,7 @@ public class Register : IRegister
             // If no amplitudes, return a zero matrix (representing a completely unpolarized state or an error).
             return new Complex[2,2] {{Complex.Zero, Complex.Zero}, {Complex.Zero, Complex.Zero}};
         }
+        
         double invMagnitude = 1.0 / Math.Sqrt(magnitudeSquared);
         alpha *= invMagnitude;
         beta *= invMagnitude;
@@ -1466,6 +1469,7 @@ public class Register : IRegister
         // The diagonal elements are probabilities: |alpha|^2 and |beta|^2.
         rho[0, 0] = Complex.Pow(alpha.Magnitude, 2);
         rho[1, 1] = Complex.Pow(beta.Magnitude, 2);
+        
         // The off-diagonal elements are alpha * conj(beta) and conj(alpha) * beta.
         rho[0, 1] = alpha * Complex.Conjugate(beta);
         rho[1, 0] = Complex.Conjugate(alpha) * beta;

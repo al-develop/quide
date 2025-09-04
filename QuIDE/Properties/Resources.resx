@@ -484,24 +484,27 @@ MNM-Team (mnm-team.org)</value>
       <value>Selected qubit is entangled</value>
     </data>
     <data name="KetZero" xml:space="preserve">
-      <value>|0⟩</value>
+      <value>|0&gt;</value>
     </data>
     <data name="KetOne" xml:space="preserve">
-      <value>|1⟩</value>
+      <value>|1&gt;</value>
     </data>
     <data name="KetPlus" xml:space="preserve">
-      <value>|+⟩</value>
+      <value>|+&gt;</value>
     </data>
     <data name="KetMinus" xml:space="preserve">
-      <value>|-⟩</value>
+      <value>|-&gt;</value>
     </data>
     <data name="KetPositive_I" xml:space="preserve">
-      <value>|i⟩</value>
+      <value>|i&gt;</value>
     </data>
     <data name="KetNegative_I" xml:space="preserve">
-      <value>|-i⟩</value>
+      <value>|-i&gt;</value>
     </data>
     <data name="Version" xml:space="preserve">
       <value>2.4.1</value>
+    </data>
+    <data name="NoRegisterForQubitFound" xml:space="preserve">
+      <value>Could not find quantum register for selected qubit.</value>
     </data>
 </root>

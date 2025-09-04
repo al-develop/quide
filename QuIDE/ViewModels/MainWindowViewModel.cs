@@ -774,20 +774,18 @@ public partial class MainWindowViewModel : ViewModelBase
         // Get the currently selected qubit from the circuit grid.
         QubitViewModel selectedQubit = CircuitGrid?.SelectedQubit;
         if (selectedQubit == null)
-        {
             return (null, false, Resources.NoQubit); // No qubit selected.
-        }
 
         QuantumComputer qc = QuantumComputer.GetInstance();
         QuantumParser.Register parserRegister = qc.FindRegister(selectedQubit.RegisterName);
         if(parserRegister == null)
-            return (null, false, "Could not find quantum register for selected qubit.");
+            return (null, false, Resources.NoRegisterForQubitFound);
         
         Register quantumRegister = parserRegister.SourceRegister;
         Register qubitSubRegister = quantumRegister[selectedQubit.Index, 1];
         return (qubitSubRegister, true, null); 
     }
-
+    
     /// <summary>
     /// Determines the color to be used for rendering the state vector on the Bloch sphere.
     /// The color is typically derived from the selected output object's amplitude/phase.
@@ -804,7 +802,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         return Avalonia.Media.Colors.Red.ToUInt32(); // Default color
     }
-
+    
     /// <summary>
     /// Renders the Bloch sphere image and updates the state vector text based on the qubit's state.
     /// This method distinguishes between pure and mixed states, calling the appropriate BlochSphereGenerator method.
@@ -816,7 +814,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             int imgSize = BlochSphere.RenderSize;
-            // Check if the render area is too small; if so, display a placeholder.
+            // Check if the render area is too small
             if (imgSize < 20)
             {
                 BlochSphere.ClearImage(Resources.AreaTooSmall);
@@ -853,7 +851,24 @@ public partial class MainWindowViewModel : ViewModelBase
             BlochSphere.ClearImage($"Error generating Bloch sphere: {ex.Message}");
         }
     }
-
+    
+    private bool MixedStateBlochSphere(Register qubitSubRegister, uint vectorColor, int imgSize, out Image plotImg, out string stateVectorText)
+    {
+        Complex[,] densityMatrix = qubitSubRegister.GetReducedDensityMatrix();
+        if (densityMatrix == null)
+        {
+            BlochSphere.ClearImage(Resources.QubitEntanlged);
+            plotImg = null;
+            stateVectorText = null;
+            return true;
+        }
+                
+        // Using GeneratePlot with density matrix
+        plotImg = _blochSphereGenerator.GeneratePlot(densityMatrix, imgSize, vectorColor);
+        stateVectorText = GetStateVectorTextFromDensityMatrix(densityMatrix);
+        return false;
+    }
+    
     private bool PureStateBlochSphere(uint vectorColor, IReadOnlyDictionary<ulong, Complex> amplitudes, int imgSize, out Image plotImg, out string stateVectorText)
     {
         amplitudes.TryGetValue(0, out Complex alpha);
@@ -870,23 +885,6 @@ public partial class MainWindowViewModel : ViewModelBase
         // Using GeneratePlot with alpha and beta amplitudes.
         plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize, vectorColor);
         stateVectorText = $"α ≈ {alpha.Real:F2} + {alpha.Imaginary:F2}i\nβ ≈ {beta.Real:F2} + {beta.Imaginary:F2}i";
-        return false;
-    }
-
-    private bool MixedStateBlochSphere(Register qubitSubRegister, uint vectorColor, int imgSize, out Image plotImg, out string stateVectorText)
-    {
-        Complex[,] densityMatrix = qubitSubRegister.GetReducedDensityMatrix();
-        if (densityMatrix == null)
-        {
-            BlochSphere.ClearImage(Resources.QubitEntanlged);
-            plotImg = null;
-            stateVectorText = null;
-            return true;
-        }
-                
-        // Using GeneratePlot with density matrix
-        plotImg = _blochSphereGenerator.GeneratePlot(densityMatrix, imgSize, vectorColor);
-        stateVectorText = GetStateVectorTextFromDensityMatrix(densityMatrix);
         return false;
     }
 

@@ -794,5 +794,11 @@ namespace QuIDE.Properties {
                 return ResourceManager.GetString("Version", resourceCulture);
             }
         }
+        
+        public static string NoRegisterForQubitFound {
+            get {
+                return ResourceManager.GetString("NoRegisterForQubitFound", resourceCulture);
+            }
+        }
     }
 }
