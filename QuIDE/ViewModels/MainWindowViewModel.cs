@@ -753,8 +753,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
         
-        uint vectorColor = GetStateVectorRenderColor();
-        RenderBlochSphereImageAndText(qubitSubRegister, vectorColor);
+        RenderBlochSphereImageAndText(qubitSubRegister);
     }
     
     #region BlochSphereHelpers
@@ -787,29 +786,11 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     
     /// <summary>
-    /// Determines the color to be used for rendering the state vector on the Bloch sphere.
-    /// The color is typically derived from the selected output object's amplitude/phase.
-    /// </summary>
-    /// <returns>A UInt32 representation of the color.</returns>
-    private uint GetStateVectorRenderColor()
-    {
-        if (_outputGridVM.SelectedObject != null)
-        {
-            var phase = _outputGridVM.SelectedObject.Amplitude;
-            var converter = new AmplitudeColorConverter();
-            var brush = converter.Convert(phase, null, null, null) as Avalonia.Media.SolidColorBrush;
-            return brush.Color.ToUInt32();
-        }
-        return Avalonia.Media.Colors.Red.ToUInt32(); // Default color
-    }
-    
-    /// <summary>
     /// Renders the Bloch sphere image and updates the state vector text based on the qubit's state.
     /// This method distinguishes between pure and mixed states, calling the appropriate BlochSphereGenerator method.
     /// </summary>
     /// <param name="qubitSubRegister">The single-qubit quantum register model.</param>
-    /// <param name="vectorColor">The color to use for the state vector.</param>
-    private void RenderBlochSphereImageAndText(Register qubitSubRegister, uint vectorColor)
+    private void RenderBlochSphereImageAndText(Register qubitSubRegister)
     {
         try
         {
@@ -829,13 +810,13 @@ public partial class MainWindowViewModel : ViewModelBase
             if (amplitudes == null)
             {
                 // mixed state: Calculate the reduced density matrix
-                if (MixedStateBlochSphere(qubitSubRegister, vectorColor, imgSize, out plotImg, out stateVectorText))
+                if (MixedStateBlochSphere(qubitSubRegister, imgSize, out plotImg, out stateVectorText))
                     return;
             }
             else
             {
                 // pure state: use selected qubits amplitudes
-                if (PureStateBlochSphere(vectorColor, amplitudes, imgSize, out plotImg, out stateVectorText))
+                if (PureStateBlochSphere(amplitudes, imgSize, out plotImg, out stateVectorText))
                     return;
             }
 
@@ -852,7 +833,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
     
-    private bool MixedStateBlochSphere(Register qubitSubRegister, uint vectorColor, int imgSize, out Image plotImg, out string stateVectorText)
+    private bool MixedStateBlochSphere(Register qubitSubRegister, int imgSize, out Image plotImg, out string stateVectorText)
     {
         Complex[,] densityMatrix = qubitSubRegister.GetReducedDensityMatrix();
         if (densityMatrix == null)
@@ -864,12 +845,12 @@ public partial class MainWindowViewModel : ViewModelBase
         }
                 
         // Using GeneratePlot with density matrix
-        plotImg = _blochSphereGenerator.GeneratePlot(densityMatrix, imgSize, vectorColor);
+        plotImg = _blochSphereGenerator.GeneratePlot(densityMatrix, imgSize);
         stateVectorText = GetStateVectorTextFromDensityMatrix(densityMatrix);
         return false;
     }
     
-    private bool PureStateBlochSphere(uint vectorColor, IReadOnlyDictionary<ulong, Complex> amplitudes, int imgSize, out Image plotImg, out string stateVectorText)
+    private bool PureStateBlochSphere(IReadOnlyDictionary<ulong, Complex> amplitudes, int imgSize, out Image plotImg, out string stateVectorText)
     {
         amplitudes.TryGetValue(0, out Complex alpha);
         amplitudes.TryGetValue(1, out Complex beta);
@@ -883,7 +864,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         // Using GeneratePlot with alpha and beta amplitudes.
-        plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize, vectorColor);
+        plotImg = _blochSphereGenerator.GeneratePlot(alpha, beta, imgSize);
         stateVectorText = $"α ≈ {alpha.Real:F2} + {alpha.Imaginary:F2}i\nβ ≈ {beta.Real:F2} + {beta.Imaginary:F2}i";
         return false;
     }

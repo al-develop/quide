@@ -57,13 +57,12 @@ public class BlochSphereGenerator
     /// <param name="alpha">Amplitude alpha</param>
     /// <param name="beta">Amplitude beta</param>
     /// <param name="imgSize">Size of the image. Used for width and height.</param>
-    /// <param name="vectorColor">Color used for the state vector. Based on phase of the qubit.</param>
     /// <returns>A ScottPlot.Image representing the Bloch Sphere with the state vector.</returns>
-    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize, uint vectorColor)
+    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize)
     {
         Normalize(ref alpha, ref beta);
         Coord3D blochVector = ConvertToBlochVector(alpha, beta);
-        return GetPlotFromComplexAmplitudes(imgSize, vectorColor, blochVector);
+        return GetPlotFromComplexAmplitudes(imgSize, blochVector);
     }
 
     /// <summary>
@@ -72,16 +71,15 @@ public class BlochSphereGenerator
     /// </summary>
     /// <param name="densityMatrix">The 2x2 complex density matrix of the qubit.</param>
     /// <param name="imgSize">Size of the image. Used for width and height.</param>
-    /// <param name="vectorColor">Color used for the state vector. Based on phase of the qubit.</param>
     /// <returns>A ScottPlot.Image representing the Bloch Sphere with the state vector.</returns>
-    public ScottPlot.Image GeneratePlot(Complex[,] densityMatrix, int imgSize, uint vectorColor)
+    public ScottPlot.Image GeneratePlot(Complex[,] densityMatrix, int imgSize)
     {
         // density Matrix is already normalized
         Coord3D blochVector = ConvertToBlochVector(densityMatrix);
-        return GetPlotFromComplexAmplitudes(imgSize, vectorColor, blochVector);
+        return GetPlotFromComplexAmplitudes(imgSize, blochVector);
     }
 
-    private Image GetPlotFromComplexAmplitudes(int imgSize, uint vectorColor, Coord3D blochVector)
+    private Image GetPlotFromComplexAmplitudes(int imgSize, Coord3D blochVector)
     {
         const double plotLimit = 1.3;
         Plot plot = new();
@@ -93,7 +91,7 @@ public class BlochSphereGenerator
         
         DrawSphereWireframe(plot);
         DrawAxesAndLabels(plot);
-        DrawStateVector(plot, blochVector, vectorColor);
+        DrawStateVector(plot, blochVector);
         
         return plot.GetImage(imgSize, imgSize);
     }
@@ -124,8 +122,9 @@ public class BlochSphereGenerator
     /// <returns>A Coord3D representing the Bloch vector. Its magnitude will be less than or equal to 1.</returns>
     private Coord3D ConvertToBlochVector(Complex[,] densityMatrix)
     {
-        double x = 2 * densityMatrix[0, 1].Real;
-        double y = 2 * densityMatrix[0, 1].Imaginary;
+        Complex num = 2 * densityMatrix[0, 1];
+        double x = num.Real;
+        double y = num.Imaginary;
         double z = densityMatrix[0, 0].Real - densityMatrix[1, 1].Real;
 
         // The resulting Bloch vector accurately represents pure states (on the surface) and mixed states (inside).
@@ -190,20 +189,18 @@ public class BlochSphereGenerator
         AddText(plot, Resources.KetOne, new Coord3D(0, 0, -1.1));
         AddText(plot, Resources.KetPlus, new Coord3D(1.1, 0, 0));
         AddText(plot, Resources.KetMinus, new Coord3D(-1.1, 0, 0));
-        AddText(plot, Resources.KetPositive_I, new Coord3D(0, 1.1, 0));
-        AddText(plot, Resources.KetNegative_I, new Coord3D(0, -1.1, 0));
+        AddText(plot, Resources.KetNegative_I, new Coord3D(0, 1.1, 0));
+        AddText(plot, Resources.KetPositive_I, new Coord3D(0, -1.1, 0));
     }
 
-    private void DrawStateVector(Plot plot, Coord3D vector, uint phaseColor)
+    private void DrawStateVector(Plot plot, Coord3D vector)
     {
-        Color fillStyleColor = ScottPlot.Color.FromARGB(phaseColor);
-
         List<Coord3D> coordinates = new() { new(0, 0, 0), vector };
-        Draw3DLine(plot, coordinates, fillStyleColor, 3, LinePattern.Solid, true);
+        Draw3DLine(plot, coordinates, Colors.Red, 3, LinePattern.Solid, true);
 
         var (_, projectedEnd) = Project(vector);
         Marker arrowHead = plot.Add.Marker(projectedEnd);
-        arrowHead.MarkerStyle.FillStyle.Color = fillStyleColor;
+        arrowHead.MarkerStyle.FillStyle.Color = Colors.Red;
         arrowHead.MarkerStyle.Shape = MarkerShape.FilledTriangleUp;
         arrowHead.MarkerStyle.Size = 7f;
     }
