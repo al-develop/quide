@@ -19,11 +19,14 @@
  */
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading.Tasks;
+using Quantum;
 using Quantum.Helpers;
 
 namespace Quantum;
@@ -163,7 +166,8 @@ public class Register : IRegister
             var sqrtSum = Math.Sqrt(sum);
             var states = initStates.Keys.ToArray();
             //we need to normalize
-            foreach (var s in states) initStates[s] /= sqrtSum;
+            foreach (var s in states)
+                initStates[s] /= sqrtSum;
         }
 
         Root = this;
@@ -177,7 +181,8 @@ public class Register : IRegister
             new Dictionary<ulong, Complex>();
         //this.amplitudes = new SortedDictionary<ulong, Complex>();
         //this.amplitudes = new ConcurrentDictionary<ulong, Complex>();
-        foreach (var pair in initStates) _amplitudes.Add(pair.Key, pair.Value);
+        foreach (var pair in initStates)
+            _amplitudes.Add(pair.Key, pair.Value);
         _random = random;
         _childRegisters = new List<Register>();
     }
@@ -208,7 +213,8 @@ public class Register : IRegister
     // only used in QuantumComputer, GetRootRegister(...)
     internal void AddRegister(Register register)
     {
-        if (Root == register.Root || Root == null || register.Root == null) return;
+        if (Root == register.Root || Root == null || register.Root == null)
+            return;
         if (Root != this)
         {
             Root.AddRegister(register);
@@ -239,7 +245,8 @@ public class Register : IRegister
             {
                 var stateToAdd = newAmplitudes.Keys.FirstOrDefault();
                 // if stateToAdd == 0, there is nothing more to do
-                if (stateToAdd <= 0) return;
+                if (stateToAdd <= 0)
+                    return;
                 var states = _amplitudes.Keys.ToArray();
                 var length = states.Length;
                 for (var k = 0; k < length; k++)
@@ -257,7 +264,8 @@ public class Register : IRegister
                 var states = _amplitudes.Keys.ToArray();
                 var length = states.Length;
                 var zeroExist = newAmplitudes.TryGetValue(0, out var zeroAmplitude);
-                if (zeroExist) newAmplitudes[0] = 1;
+                if (zeroExist)
+                    newAmplitudes[0] = 1;
                 foreach (var pair in newAmplitudes)
                     for (var k = 0; k < length; k++)
                     {
@@ -284,100 +292,8 @@ public class Register : IRegister
         }
     }
 
+
     
-    /// <summary>
-    ///     Calculates the reduced density matrix for a specific qubit within this (root) register.
-    ///     This method performs the partial trace over all other qubits to derive the state of the target qubit.
-    /// </summary>
-    /// <param name="targetQubitOffsetInRoot">The offset of the target qubit within the root register.</param>
-    /// <returns>A 2x2 complex matrix representing the reduced density matrix of the target qubit.</returns>
-    internal Complex[,] CalculateReducedDensityMatrixForQubit(int targetQubitOffsetInRoot)
-    {
-        // Initialize the components of the 2x2 density matrix.
-        // rho10 is complex conjugate of 01 and implicitly clear
-        Complex rho00 = Complex.Zero;
-        Complex rho11 = Complex.Zero;
-        Complex rho01 = Complex.Zero;
-
-        // Create a mask to isolate the target qubit's bit.
-        ulong targetMask = (ulong)1 << targetQubitOffsetInRoot;
-        
-        // Create a mask for all bits in the root register, except the target qubit.
-        // This is used to identify the 'rest of the system' state.
-        ulong restOfSystemMask = ~targetMask & ((1UL << Width) - 1UL);
-
-        // Dictionaries to store amplitudes of the 'rest of the system' corresponding to the target qubit being 0 or 1.
-        // These are used to calculate the off-diagonal elements (coherences).
-        Dictionary<ulong, Complex> amplitudesOfRestWithQubit0 = new Dictionary<ulong, Complex>();
-        Dictionary<ulong, Complex> amplitudesOfRestWithQubit1 = new Dictionary<ulong, Complex>();
-
-        // diagonals (rho00 and rho11)
-        // Iterate through all basis states and their amplitudes in the full system state vector.
-        foreach (var entry in _amplitudes)
-        {
-            ulong fullState = entry.Key;
-            Complex amplitude = entry.Value;
-
-            // Determine if the target qubit is 0 or 1 in the current full state.
-            bool targetQubitIsOne = (fullState & targetMask) != 0;
-
-            // Extract the state of the 'rest of the system' by masking out the target qubit's bit.
-            ulong restState = fullState & restOfSystemMask;
-
-            if (targetQubitIsOne)
-            {
-                // add probability contribution to rho11.
-                rho11 += Complex.Pow(amplitude.Magnitude, 2);
-                
-                // Store the amplitude associated with this 'rest of system' state and target qubit 1.
-                amplitudesOfRestWithQubit1[restState] = amplitude;
-            }
-            else
-            {
-                // add probability contribution to rho00.
-                rho00 += Complex.Pow(amplitude.Magnitude, 2);
-                
-                // Store the amplitude associated with this 'rest of system' state and target qubit 0.
-                amplitudesOfRestWithQubit0[restState] = amplitude;
-            }
-        }
-
-        // Calculate the off-diagonal elements (rho01).
-        // This sums the products of amplitudes (alpha_0 * conj(alpha_1)) for all matching 'rest of system' states.
-        foreach (var entry in amplitudesOfRestWithQubit0)
-        {
-            ulong restState = entry.Key;
-            Complex ampFor0 = entry.Value;
-
-            // If a corresponding amplitude exists where the target qubit is 1 and the rest of the system is the same,
-            // then contribute to the coherence.
-            if (amplitudesOfRestWithQubit1.TryGetValue(restState, out Complex ampFor1))
-            {
-                rho01 += ampFor0 * Complex.Conjugate(ampFor1);
-            }
-        }
-
-        // Construct the 2x2 density matrix.
-        Complex[,] densityMatrix = new Complex[2, 2];
-        densityMatrix[0, 0] = rho00;
-        densityMatrix[1, 1] = rho11;
-        densityMatrix[0, 1] = rho01;
-        densityMatrix[1, 0] = Complex.Conjugate(rho01); // rho10 is the complex conjugate of rho01.
-
-        // A density matrix must have a trace of 1. Normalize if necessary due to floating-point inaccuracies.
-        double trace = densityMatrix[0,0].Real + densityMatrix[1,1].Real;
-        // Assuming QuantumComputer.Epsilon is defined for floating point comparisons.
-        if (Math.Abs(trace - 1.0) > QuantumComputer.Epsilon)
-        {
-            Complex invTrace = new Complex(1.0 / trace, 0);
-            densityMatrix[0,0] *= invTrace;
-            densityMatrix[1,1] *= invTrace;
-            densityMatrix[0,1] *= invTrace;
-            densityMatrix[1,0] *= invTrace;
-        }
-
-        return densityMatrix;
-    }
     
     private Dictionary<ulong, Complex> RemoveAmplitudes()
     {
@@ -414,7 +330,8 @@ public class Register : IRegister
         else
         {
             _amplitudes = null;
-            foreach (var child in _childRegisters) child.DetachRoot();
+            foreach (var child in _childRegisters)
+                child.DetachRoot();
             _childRegisters = null;
         }
 
@@ -460,7 +377,8 @@ public class Register : IRegister
                 var reg1 = reg;
                 var existTheSame =
                     newChildren.Any(x => x.OffsetToRoot == reg1.OffsetToRoot && x.Width == reg1.Width);
-                if (!existTheSame) newChildren.Add(reg);
+                if (!existTheSame)
+                    newChildren.Add(reg);
             }
             else
             {
@@ -476,7 +394,8 @@ public class Register : IRegister
 
         // if one of old states could be also a new state,
         // we must change amplitudes in order
-        if (measured << offsetToRemove < (ulong)1 << Width) Array.Sort(states);
+        if (measured << offsetToRemove < (ulong)1 << Width)
+            Array.Sort(states);
 
         var length = states.Length;
         for (var k = 0; k < length; k++)
@@ -487,7 +406,8 @@ public class Register : IRegister
             var leftBits = state >> (offsetToRemove + widthToRemove);
             var newState = (leftBits << offsetToRemove) | rightBits;
             _amplitudes[newState] = _amplitudes[state];
-            if (newState != state) _amplitudes.Remove(state);
+            if (newState != state)
+                _amplitudes.Remove(state);
         }
     }
 
@@ -532,7 +452,8 @@ public class Register : IRegister
 
             // foreach check, if the remaining qubits are always the same
             var negMasked = pair.Key & negatedMask;
-            if (negMasked != negMaskedState) return null;
+            if (negMasked != negMaskedState)
+                return null;
             toReturn[maskedState] = pair.Value;
         }
 
@@ -575,7 +496,8 @@ public class Register : IRegister
         {
             randomDouble -= pair.Value;
             measured = pair.Key;
-            if (0 >= randomDouble) break;
+            if (0 >= randomDouble)
+                break;
         }
 
         var states = _amplitudes.Keys.ToArray();
@@ -607,7 +529,8 @@ public class Register : IRegister
     public ulong? GetValue()
     {
         var probabilities = GetProbabilities();
-        if (probabilities.Count == 1) return probabilities.Keys.First();
+        if (probabilities.Count == 1)
+            return probabilities.Keys.First();
         return null;
     }
 
@@ -618,9 +541,11 @@ public class Register : IRegister
     /// <returns>Dictionary, where key is possible state and value is the probability of that state.</returns>
     public IReadOnlyDictionary<ulong, double> GetProbabilities()
     {
-        if (Root != this) return Root.GetProbabilities(this);
+        if (Root != this)
+            return Root.GetProbabilities(this);
         var probabilities = new Dictionary<ulong, double>(_amplitudes.Count);
-        foreach (var pair in _amplitudes) probabilities[pair.Key] = Math.Pow(pair.Value.Magnitude, 2);
+        foreach (var pair in _amplitudes)
+            probabilities[pair.Key] = Math.Pow(pair.Value.Magnitude, 2);
         return probabilities;
     }
 
@@ -664,8 +589,10 @@ public class Register : IRegister
     public Complex[] GetVector()
     {
         IReadOnlyDictionary<ulong, Complex> tmpAmpl = _amplitudes;
-        if (Root != this) tmpAmpl = Root.GetAmplitudes(this);
-        if (tmpAmpl == null) return null;
+        if (Root != this)
+            tmpAmpl = Root.GetAmplitudes(this);
+        if (tmpAmpl == null)
+            return null;
         var statesCount = (ulong)1 << Width;
         var vector = new Complex[statesCount];
         for (ulong i = 0; i < statesCount; i++)
@@ -681,7 +608,8 @@ public class Register : IRegister
         if (Root != this)
         {
             var measured = Measure();
-            if (measured != newValue) Root.Reset(this, measured, newValue);
+            if (measured != newValue)
+                Root.Reset(this, measured, newValue);
             return;
         }
 
@@ -714,7 +642,8 @@ public class Register : IRegister
         {
             sum += Math.Pow(_amplitudes[state].Magnitude, 2);
             measured = state;
-            if (sum >= randomDouble) break;
+            if (sum >= randomDouble)
+                break;
         }
 
         _amplitudes.Clear();
@@ -730,7 +659,8 @@ public class Register : IRegister
     /// <returns>0 or 1 - the measured value of the qubit.</returns>
     public byte Measure(int position)
     {
-        if (Root != this) return Root.Measure(position + OffsetToRoot);
+        if (Root != this)
+            return Root.Measure(position + OffsetToRoot);
 
         // TODO limit ?
 
@@ -748,7 +678,8 @@ public class Register : IRegister
                 oneProbability += Math.Pow(_amplitudes[state].Magnitude, 2);
 
         byte measured = 0;
-        if (randomDouble > zeroProbability) measured = 1;
+        if (randomDouble > zeroProbability)
+            measured = 1;
         var states = _amplitudes.Keys.ToArray();
         var length = states.Length;
         for (var k = 0; k < length; k++)
@@ -839,12 +770,14 @@ public class Register : IRegister
     {
         if (Root != this)
         {
-            for (var i = 0; i < controls.Length; i++) controls[i] += OffsetToRoot;
+            for (var i = 0; i < controls.Length; i++)
+                controls[i] += OffsetToRoot;
             Root.Toffoli(target + OffsetToRoot, controls);
             return;
         }
 
-        if (controls.Length < 2) throw new ArgumentException("Too few control bits");
+        if (controls.Length < 2)
+            throw new ArgumentException("Too few control bits");
 
         var controlsLength = controls.Length;
         var done = new HashSet<ulong>();
@@ -853,12 +786,15 @@ public class Register : IRegister
         for (var k = 0; k < length; k++)
         {
             var state = states[k];
-            if (done.Contains(state)) continue;
+            if (done.Contains(state))
+                continue;
             // Flip the target bit of a basis state if all control bits are set
             var i = 0;
-            while (i < controlsLength && (state & ((ulong)1 << controls[i])) != 0) i++;
+            while (i < controlsLength && (state & ((ulong)1 << controls[i])) != 0)
+                i++;
 
-            if (i != controlsLength) continue;
+            if (i != controlsLength)
+                continue;
             //state ^= ((ulong)1 << target);
             var reversedTargetState = state ^ ((ulong)1 << target);
 
@@ -902,7 +838,8 @@ public class Register : IRegister
         }
 
         //TODO throw in every control gate
-        if (control == target) throw new ArgumentException("Target and control bits are the same");
+        if (control == target)
+            throw new ArgumentException("Target and control bits are the same");
 
         var done = new HashSet<ulong>();
         var states = _amplitudes.Keys.ToArray();
@@ -910,12 +847,14 @@ public class Register : IRegister
         for (var k = 0; k < length; k++)
         {
             var state = states[k];
-            if (done.Contains(state)) continue;
+            if (done.Contains(state))
+                continue;
             //determine if the control of the basis state is set or not needed
             var controlIsSet = control == null || (state & ((ulong)1 << control.Value)) != 0;
 
             // Flip the target bit of a basis state if the control bit is set
-            if (!controlIsSet) continue;
+            if (!controlIsSet)
+                continue;
             var t = _amplitudes[state];
             //state ^= ((ulong)1 << target);
             var reversedTargetState = state ^ ((ulong)1 << target);
@@ -963,11 +902,13 @@ public class Register : IRegister
         for (var k = 0; k < length; k++)
         {
             var state = states[k];
-            if (done.Contains(state)) continue;
+            if (done.Contains(state))
+                continue;
             //determine if the control of the basis state is set or not needed
             var controlIsSet = control == null || (state & ((ulong)1 << control.Value)) != 0;
 
-            if (!controlIsSet) continue;
+            if (!controlIsSet)
+                continue;
             //state ^= ((ulong)1 << target);
             var reversedTargetState = state ^ ((ulong)1 << target);
 
@@ -1031,9 +972,11 @@ public class Register : IRegister
 
             //determine if the control of the basis state is set or not needed
             var controlIsSet = control == null || (state & ((ulong)1 << control.Value)) != 0;
-            if (!controlIsSet) continue;
+            if (!controlIsSet)
+                continue;
             // Multiply with -1 if the target bit is set
-            if ((state & ((ulong)1 << target)) != 0) _amplitudes[state] *= -1;
+            if ((state & ((ulong)1 << target)) != 0)
+                _amplitudes[state] *= -1;
         }
     }
 
@@ -1069,10 +1012,12 @@ public class Register : IRegister
         for (var i = 0; i < length; i++)
         {
             var state = states[i];
-            if (done.Contains(state)) continue;
+            if (done.Contains(state))
+                continue;
             //determine if the control of the basis state is set or not needed
             var controlIsSet = control == null || (state & ((ulong)1 << control.Value)) != 0;
-            if (!controlIsSet) continue;
+            if (!controlIsSet)
+                continue;
             //determine if the target of the basis state is set 
             var targetIsSet = (state & ((ulong)1 << target)) != 0;
 
@@ -1114,7 +1059,8 @@ public class Register : IRegister
                     _amplitudes[reversedTargetState] = newTnot;
             }
 
-            if (reversedTargetStateExist) done.Add(reversedTargetState);
+            if (reversedTargetStateExist)
+                done.Add(reversedTargetState);
         }
     }
 
@@ -1261,7 +1207,8 @@ public class Register : IRegister
 
             //determine if the control of the basis state is set or not needed
             var controlIsSet = control == null || (state & ((ulong)1 << control.Value)) != 0;
-            if (!controlIsSet) continue;
+            if (!controlIsSet)
+                continue;
             // Multiply if the target bit is set
             if ((state & ((ulong)1 << target)) != 0)
                 _amplitudes[state] *= z;
@@ -1331,7 +1278,8 @@ public class Register : IRegister
     {
         if (Root != this)
         {
-            for (var i = 0; i < controls.Length; i++) controls[i] += OffsetToRoot;
+            for (var i = 0; i < controls.Length; i++)
+                controls[i] += OffsetToRoot;
             Root.PhaseKick(gamma, target + OffsetToRoot, controls);
             return;
         }
@@ -1345,12 +1293,14 @@ public class Register : IRegister
             var state = states[k];
 
             // Multiply if the target bit is set
-            if ((state & ((ulong)1 << target)) == 0) continue;
+            if ((state & ((ulong)1 << target)) == 0)
+                continue;
             var i = 0;
             if (controlsLength > 0)
                 while (i < controlsLength && (state & ((ulong)1 << controls[i])) != 0)
                     i++;
-            if (controlsLength == 0 || (controlsLength > 0 && i == controlsLength)) _amplitudes[state] *= z;
+            if (controlsLength == 0 || (controlsLength > 0 && i == controlsLength))
+                _amplitudes[state] *= z;
         }
     }
 
@@ -1368,7 +1318,8 @@ public class Register : IRegister
     {
         if (Root != this)
         {
-            for (var i = 0; i < controls.Length; i++) controls[i] += OffsetToRoot;
+            for (var i = 0; i < controls.Length; i++)
+                controls[i] += OffsetToRoot;
             Root.CPhaseShift(dist, target + OffsetToRoot, controls);
             return;
         }
@@ -1381,12 +1332,14 @@ public class Register : IRegister
         {
             var state = states[k];
             // Multiply if the target and control bits are set
-            if ((state & ((ulong)1 << target)) == 0) continue;
+            if ((state & ((ulong)1 << target)) == 0)
+                continue;
             var i = 0;
             if (controlsLength > 0)
                 while (i < controlsLength && (state & ((ulong)1 << controls[i])) != 0)
                     i++;
-            if (controlsLength == 0 || (controlsLength > 0 && i == controlsLength)) _amplitudes[state] *= z;
+            if (controlsLength == 0 || (controlsLength > 0 && i == controlsLength))
+                _amplitudes[state] *= z;
         }
     }
 
@@ -1404,7 +1357,8 @@ public class Register : IRegister
     {
         if (Root != this)
         {
-            for (var i = 0; i < controls.Length; i++) controls[i] += OffsetToRoot;
+            for (var i = 0; i < controls.Length; i++)
+                controls[i] += OffsetToRoot;
             Root.InverseCPhaseShift(dist, target + OffsetToRoot, controls);
             return;
         }
@@ -1417,16 +1371,18 @@ public class Register : IRegister
         {
             var state = states[k];
             // Multiply if the target and control bits are set
-            if ((state & ((ulong)1 << target)) == 0) continue;
+            if ((state & ((ulong)1 << target)) == 0)
+                continue;
             var i = 0;
             if (controlsLength > 0)
                 while (i < controlsLength && (state & ((ulong)1 << controls[i])) != 0)
                     i++;
-            if (controlsLength == 0 || i == controlsLength) _amplitudes[state] *= z;
+            if (controlsLength == 0 || i == controlsLength)
+                _amplitudes[state] *= z;
         }
     }
 
-    
+
     /// <summary>
     ///     Calculates the reduced density matrix for this register.
     ///     This method is primarily intended for a single-qubit register to visualize its state on the Bloch Sphere,
@@ -1439,7 +1395,7 @@ public class Register : IRegister
         // Validate that this method is called for a single-qubit register.
         if (Width != 1)
             throw new ArgumentException("Reduced density matrix calculation is currently supported only for a single qubit register.");
-        
+
         // If this register is a sub-register of a larger entangled system,
         // the calculation must be performed by the root register from the full state vector.
         if (Root != this)
@@ -1459,9 +1415,9 @@ public class Register : IRegister
         if (magnitudeSquared == 0)
         {
             // If no amplitudes, return a zero matrix (representing a completely unpolarized state or an error).
-            return new Complex[2,2] {{Complex.Zero, Complex.Zero}, {Complex.Zero, Complex.Zero}};
+            return new Complex[2, 2] { { Complex.Zero, Complex.Zero }, { Complex.Zero, Complex.Zero } };
         }
-        
+
         double invMagnitude = 1.0 / Math.Sqrt(magnitudeSquared);
         alpha *= invMagnitude;
         beta *= invMagnitude;
@@ -1469,20 +1425,26 @@ public class Register : IRegister
         // The diagonal elements are probabilities: |alpha|^2 and |beta|^2.
         rho[0, 0] = Complex.Pow(alpha.Magnitude, 2);
         rho[1, 1] = Complex.Pow(beta.Magnitude, 2);
-        
+
         // The off-diagonal elements are alpha * conj(beta) and conj(alpha) * beta.
         rho[0, 1] = alpha * Complex.Conjugate(beta);
         rho[1, 0] = Complex.Conjugate(alpha) * beta;
         return rho;
     }
-        
+
+    internal Complex[,] CalculateReducedDensityMatrixForQubit(int targetQubitOffsetInRoot)
+    {
+        return DensityMatrixCalculator.Calculate(_amplitudes, this.Width, targetQubitOffsetInRoot);
+    }
+    
     /// <summary>
     ///     Overrides native ToString() method, for friendly printing Register's content.
     /// </summary>
     /// <returns>Formatted string representing register. Prints its possible states and their probabilities.</returns>
     public override string ToString()
     {
-        if (Root == null) return null;
+        if (Root == null)
+            return null;
         var buf = new StringBuilder();
         IFormatProvider formatter = new ComplexFormatter();
 
@@ -1491,7 +1453,8 @@ public class Register : IRegister
         var max = (ulong)(1 << Width);
         for (ulong i = 0; i < max; i++)
         {
-            if (!probabilities.TryGetValue(i, out var prob)) continue;
+            if (!probabilities.TryGetValue(i, out var prob))
+                continue;
             if (tmpAmpl != null && tmpAmpl.TryGetValue(i, out var amplitude))
                 buf.Append(string.Format(formatter, "{0:I5} ", amplitude));
             else
@@ -1502,7 +1465,8 @@ public class Register : IRegister
 
             for (var j = Width - 1; j >= 0; j--)
             {
-                if (j % 4 == 3) buf.Append(" ");
+                if (j % 4 == 3)
+                    buf.Append(" ");
                 buf.Append((((ulong)1 << j) & i) >> j);
             }
 

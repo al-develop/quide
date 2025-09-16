@@ -52,20 +52,6 @@ public class BlochSphereGenerator
     }
 
     /// <summary>
-    /// Generate a square Bloch Sphere Image from Complex arguments. 
-    /// </summary>
-    /// <param name="alpha">Amplitude alpha</param>
-    /// <param name="beta">Amplitude beta</param>
-    /// <param name="imgSize">Size of the image. Used for width and height.</param>
-    /// <returns>A ScottPlot.Image representing the Bloch Sphere with the state vector.</returns>
-    public ScottPlot.Image GeneratePlot(Complex alpha, Complex beta, int imgSize)
-    {
-        Normalize(ref alpha, ref beta);
-        Coord3D blochVector = ConvertToBlochVector(alpha, beta);
-        return GetPlotFromComplexAmplitudes(imgSize, blochVector);
-    }
-
-    /// <summary>
     /// Generate a square Bloch Sphere Image from a 2x2 density matrix.
     /// This method calculates the Bloch vector from the density matrix and renders it.
     /// </summary>
@@ -76,10 +62,11 @@ public class BlochSphereGenerator
     {
         // density Matrix is already normalized
         Coord3D blochVector = ConvertToBlochVector(densityMatrix);
-        return GetPlotFromComplexAmplitudes(imgSize, blochVector);
+        var color = GetVectorColor(blochVector);
+        return GetPlotFromComplexAmplitudes(imgSize, color, blochVector);
     }
 
-    private Image GetPlotFromComplexAmplitudes(int imgSize, Coord3D blochVector)
+    private Image GetPlotFromComplexAmplitudes(int imgSize, Color vectorColor, Coord3D blochVector)
     {
         const double plotLimit = 1.3;
         Plot plot = new();
@@ -88,32 +75,23 @@ public class BlochSphereGenerator
         plot.HideGrid();
         plot.Axes.SetLimits(-plotLimit, plotLimit, -plotLimit, plotLimit);
         plot.Axes.Rules.Clear();
-        
+
         DrawSphereWireframe(plot);
         DrawAxesAndLabels(plot);
-        DrawStateVector(plot, blochVector);
-        
+        DrawStateVector(plot, vectorColor, blochVector);
+
         return plot.GetImage(imgSize, imgSize);
     }
 
-    private void Normalize(ref Complex alpha, ref Complex beta)
-    {
-        double magnitude = Math.Sqrt(Math.Pow(alpha.Magnitude, 2) + Math.Pow(beta.Magnitude, 2));
-        if (magnitude == 0)
-            magnitude = 1;
-        alpha /= magnitude; // "Scale" down to probabilities (between 0 and 1)
-        beta /= magnitude;
-    }
-
-    // "Mapping" from alpha/beta to "angles" theta/psi to find any point on the surface
-    private Coord3D ConvertToBlochVector(Complex alpha, Complex beta)
-    {
-        Complex num = 2 * (Complex.Conjugate(alpha) * beta); // conjugate alpha = theta/2
-        double real = num.Real;
-        double imaginary = num.Imaginary; // y
-        double z = Math.Pow(alpha.Magnitude, 2) - Math.Pow(beta.Magnitude, 2);
-        return new Coord3D(real, imaginary, z);
-    }
+    // // "Mapping" from alpha/beta to "angles" theta/psi to find any point on the surface
+    // private Coord3D ConvertToBlochVector(Complex alpha, Complex beta)
+    // {
+    //     Complex num = 2 * (Complex.Conjugate(alpha) * beta); // conjugate alpha = theta/2
+    //     double real = num.Real;
+    //     double imaginary = num.Imaginary; // y
+    //     double z = Math.Pow(alpha.Magnitude, 2) - Math.Pow(beta.Magnitude, 2);
+    //     return new Coord3D(real, imaginary, z);
+    // }
 
     /// <summary>
     /// Converts a 2x2 density matrix into a Bloch vector (x, y, z) coordinates.
@@ -131,7 +109,15 @@ public class BlochSphereGenerator
         // No further normalization of the vector is needed here, as the density matrix is already normalized.
         return new Coord3D(x, y, z);
     }
-    
+
+    private Color GetVectorColor(Coord3D blochVector)
+    {
+        // Pure states (length ≈ 1) are red.
+        // Mixed states (length < 1) are blue.
+        double length = Math.Sqrt(Math.Pow(blochVector.X, 2) + Math.Pow(blochVector.Y, 2) + Math.Pow(blochVector.Z, 2));
+        return (length < 1) ? Colors.Blue : Colors.Red;
+    }
+
     private void DrawSphereWireframe(Plot plot)
     {
         const double negativeHalfPi = -Math.PI / 2;
@@ -192,14 +178,14 @@ public class BlochSphereGenerator
         AddText(plot, Resources.KetPositive_I, new Coord3D(0, -1.1, 0));
     }
 
-    private void DrawStateVector(Plot plot, Coord3D vector)
+    private void DrawStateVector(Plot plot, Color vectorColor, Coord3D vector)
     {
         List<Coord3D> coordinates = new() { new(0, 0, 0), vector };
-        Draw3DLine(plot, coordinates, Colors.Red, 3, LinePattern.Solid, true);
+        Draw3DLine(plot, coordinates, vectorColor, 3, LinePattern.Solid, true);
 
         var (_, projectedEnd) = Project(vector);
         Marker arrowHead = plot.Add.Marker(projectedEnd);
-        arrowHead.MarkerStyle.FillStyle.Color = Colors.Red;
+        arrowHead.MarkerStyle.FillStyle.Color = vectorColor;
         arrowHead.MarkerStyle.Shape = MarkerShape.FilledTriangleUp;
         arrowHead.MarkerStyle.Size = 7f;
     }
