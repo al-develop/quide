@@ -132,7 +132,6 @@ public class BlochSphereGenerator
         return new Coord3D(x, y, z);
     }
     
-    
     private void DrawSphereWireframe(Plot plot)
     {
         const double negativeHalfPi = -Math.PI / 2;
