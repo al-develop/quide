@@ -84,9 +84,7 @@ public static class DensityMatrixCalculator
             // If a corresponding amplitude exists where the target qubit is 1 and the rest of the system is the same,
             // then contribute to the coherence.
             if (amplitudesOfRestWithQubit1.TryGetValue(restState, out Complex ampFor1))
-            {
                 rho01 += ampFor0 * Complex.Conjugate(ampFor1);
-            }
         }
 
         return AssembleAndNormalizeDensityMatrix(rho00, rho11, rho01);
@@ -107,11 +105,10 @@ public static class DensityMatrixCalculator
         
         object _lock = new object();
 
-        // 2. Parallelize the first loop to calculate diagonal elements and populate dictionaries.
-        // We use thread-local storage for the sums to avoid locking inside the loop.
-        // (A) each thread gets its own private tuple for summing.
+        // Parallelize the first loop to calculate diagonal elements and populate dictionaries.
+        // Use thread-local storage for the sums to avoid locking inside the loop.
+        // Rach thread gets its own private tuple for summing.
         Parallel.ForEach(amplitudes, () => (localRho00: Complex.Zero, localRho11: Complex.Zero),
-            // (B) Body of the loop: executed by each thread on a partition of the data.
             (entry, loopState, localSums) =>
             {
                 ulong fullState = entry.Key;
@@ -133,11 +130,9 @@ public static class DensityMatrixCalculator
 
                 return localSums; // Pass the updated local sums to the next iteration for this thread.
             },
-
-            // (C) Finalizer: executed once per thread after it has finished its work.
+            
             (localSums) =>
             {
-                // Lock ensures that additions to the global sums are atomic.
                 lock (_lock)
                 {
                     rho00 += localSums.localRho00;
@@ -155,10 +150,8 @@ public static class DensityMatrixCalculator
                 ulong restState = entry.Key;
                 Complex ampFor0 = entry.Value;
                 if (amplitudesOfRestWithQubit1.TryGetValue(restState, out Complex ampFor1))
-                {
                     localRho01 += ampFor0 * Complex.Conjugate(ampFor1);
-                }
-
+                
                 return localRho01;
             },
             (localRho01) =>  
@@ -176,14 +169,13 @@ public static class DensityMatrixCalculator
 
     private static Complex[,] AssembleAndNormalizeDensityMatrix(Complex rho00, Complex rho11, Complex rho01)
     {
-        // 1. Construct the 2x2 density matrix.
         Complex[,] densityMatrix = new Complex[2, 2];
         densityMatrix[0, 0] = rho00;
         densityMatrix[1, 1] = rho11;
         densityMatrix[0, 1] = rho01;
         densityMatrix[1, 0] = Complex.Conjugate(rho01); // rho10 is the complex conjugate of rho01.
 
-        // 2. A density matrix must have a trace of 1. Normalize if necessary.
+        // A density matrix must have a trace of 1. Normalize if necessary.
         double trace = densityMatrix[0, 0].Real + densityMatrix[1, 1].Real;
         if (Math.Abs(trace - 1.0) > QuantumComputer.Epsilon)
         {
