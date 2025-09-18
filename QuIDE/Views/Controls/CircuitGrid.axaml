@@ -62,7 +62,6 @@
 										<DataTemplate>
 											<StackPanel Orientation="Horizontal"
                                                         Background="#FFFFFFFF"
-                                                        IsEnabled="{Binding IsEnabled}"
                                                         RenderTransformOrigin="{x:Static vm:CircuitGridViewModel.QubitScaleCenter}">
 												<!-- Context menu -->
 												<StackPanel.ContextMenu>
@@ -90,53 +89,53 @@
 													<ScaleTransform ScaleX="1" ScaleY="-1" />
 												</StackPanel.RenderTransform>
 
-												<RadioButton IsChecked="{Binding IsSelected}" Margin="10,0,0,0"
+												<RadioButton IsChecked="{Binding IsSelected}" Margin="10,0,0,0" 
 												             GroupName="QubitSelection" />
 												
 												<!-- First Vertical Line -->
-												<Rectangle
-                                                    Width="5"
-                                                    Height="{x:Static vm:CircuitGridViewModel.QubitSize}"
-                                                    Fill="{DynamicResource ImgQubitBegin}" />
+												<Rectangle IsEnabled="{Binding IsEnabled}"
+												           Width="5"
+												           Height="{x:Static vm:CircuitGridViewModel.QubitSize}"
+												           Fill="{DynamicResource ImgQubitBegin}" />
 
 												<!-- RegisterName (X,..) -->
-												<TextBlock
-                                                    Text="{Binding RegisterName}"
-                                                    FontSize="30"
-                                                    FontFamily="Times New Roman"
-                                                    FontStyle="Oblique"
-                                                    VerticalAlignment="Center" />
+												<TextBlock IsEnabled="{Binding IsEnabled}"
+												           Text="{Binding RegisterName}"
+												           FontSize="30"
+												           FontFamily="Times New Roman"
+												           FontStyle="Oblique"
+												           VerticalAlignment="Center" />
 
 												<!-- Lowercase index -->
-												<TextBlock
-                                                    Text="{Binding Index}"
-                                                    FontSize="20"
-                                                    FontFamily="Times New Roman"
-                                                    FontStyle="Oblique"
-                                                    VerticalAlignment="Bottom" />
+												<TextBlock IsEnabled="{Binding IsEnabled}"
+												           Text="{Binding Index}"
+												           FontSize="20"
+												           FontFamily="Times New Roman"
+												           FontStyle="Oblique"
+												           VerticalAlignment="Bottom" />
 
 												<!-- First Qubit arrow -->
-												<Rectangle
-                                                    Width="20"
-                                                    Height="{x:Static vm:CircuitGridViewModel.QubitSize}"
-                                                    Fill="{DynamicResource ImgQubitEnd}" />
+												<Rectangle IsEnabled="{Binding IsEnabled}"
+												           Width="20"
+												           Height="{x:Static vm:CircuitGridViewModel.QubitSize}"
+												           Fill="{DynamicResource ImgQubitEnd}" />
 
 												<!-- Equals sign -->
-												<TextBlock
-                                                    Text="= "
-                                                    FontSize="30"
-                                                    FontFamily="Times New Roman"
-                                                    FontStyle="Oblique"
-                                                    VerticalAlignment="Center" />
+												<TextBlock IsEnabled="{Binding IsEnabled}"
+												           Text="= "
+												           FontSize="30"
+												           FontFamily="Times New Roman"
+												           FontStyle="Oblique"
+												           VerticalAlignment="Center" />
 
 												<!-- Flip Qubit -->
-												<Button VerticalAlignment="Top" Padding="0"
+												<Button VerticalAlignment="Top" Padding="0" IsEnabled="{Binding IsEnabled}"
                                                         Command="{Binding ChangeValueCommand}"
                                                         ToolTip.Tip="{x:Static p:Resources.FlipBit}">
-													<Rectangle
-                                                        Width="{x:Static vm:CircuitGridViewModel.QubitSize}"
-                                                        Height="{x:Static vm:CircuitGridViewModel.QubitSize}"
-                                                        Fill="{Binding QubitImage}" />
+													<Rectangle IsEnabled="{Binding IsEnabled}"
+													           Width="{x:Static vm:CircuitGridViewModel.QubitSize}"
+													           Height="{x:Static vm:CircuitGridViewModel.QubitSize}"
+													           Fill="{Binding QubitImage}" />
 												</Button>
 											</StackPanel>
 										</DataTemplate>
