@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Resources;
+using System.Text;
 using System.Windows.Input;
 using Avalonia.Controls;
 using QuIDE.CodeHelpers;
@@ -876,7 +877,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // Use a small tolerance for floating-point comparisons.
         const double epsilon = 1e-6;
 
-        string stateVectorText;
+        StringBuilder stateVectorBuilder;
 
         if (Math.Abs(lengthSquared - 1.0) < epsilon)
         {
@@ -897,24 +898,25 @@ public partial class MainWindowViewModel : ViewModelBase
                 beta = densityMatrix[1, 0] / alpha;
             }
 
-            stateVectorText = $"State: Pure\n" +
-                              $"α ≈ {alpha.Real:F3} + {alpha.Imaginary:F3}i\n" +
-                              $"β ≈ {beta.Real:F3} + {beta.Imaginary:F3}i";
+            stateVectorBuilder = new StringBuilder();
+            stateVectorBuilder.AppendLine("State: Pure");
+            stateVectorBuilder.AppendLine($"α ≈ {alpha.Real:F3} + {alpha.Imaginary:F3}i");
+            stateVectorBuilder.AppendLine($"β ≈ {beta.Real:F3} + {beta.Imaginary:F3}i");
         }
         else
         {
             // Mixed state: There is no single alpha/beta. We display the density matrix elements.
-
-            stateVectorText = $"State: Mixed\n" +
-                              $"ρ₀₀ = {densityMatrix[0, 0].Real:F3}\n" +
-                              $"ρ₁₁ = {densityMatrix[1, 1].Real:F3}\n" +
-                              $"ρ₀₁ = {densityMatrix[0, 1].Real:F3} + {densityMatrix[0, 1].Imaginary:F3}i";
+            stateVectorBuilder = new StringBuilder();
+            stateVectorBuilder.AppendLine("State: Mixed");
+            stateVectorBuilder.Append($@"ρ₀₀ = {densityMatrix[0, 0].Real:F3}    ");
+            stateVectorBuilder.AppendLine($@"ρ₀₁ = {densityMatrix[0, 1].Real:F3} + {densityMatrix[0, 1].Imaginary:F3}i");
+            stateVectorBuilder.Append($@"ρ₁₀ = {densityMatrix[1, 0].Real:F3} + {densityMatrix[1, 0].Imaginary:F3}i    ");
+            stateVectorBuilder.AppendLine($@"ρ₁₁ = {densityMatrix[1, 1].Real:F3}");
         }
 
         // Bloch vector.
-        stateVectorText += $"\nBloch Vector: (x={x:F3}, y={y:F3}, z={z:F3})";
-
-        return stateVectorText;
+        stateVectorBuilder.AppendLine($"Bloch Vector: (x={x:F3}, y={y:F3}, z={z:F3})");
+        return stateVectorBuilder.ToString();
     }
 
     #endregion BlochSphereHelpers
