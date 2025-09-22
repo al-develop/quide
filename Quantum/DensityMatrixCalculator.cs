@@ -16,13 +16,7 @@ public static class DensityMatrixCalculator
             ? CalculateSequential(amplitudes, totalWidth, targetQubitOffset) 
             : CalculateParallel(amplitudes, totalWidth, targetQubitOffset);
     }
- 
-    /// <summary>
-    ///     Calculates the reduced density matrix for a specific qubit within this (root) register.
-    ///     This method performs the partial trace over all other qubits to derive the state of the target qubit.
-    /// </summary>
-    /// <param name="targetQubitOffsetInRoot">The offset of the target qubit within the root register.</param>
-    /// <returns>A 2x2 complex matrix representing the reduced density matrix of the target qubit.</returns>
+
     private static Complex[,] CalculateSequential(IReadOnlyDictionary<ulong, Complex> amplitudes, int totalWidth, int targetQubitOffset)
     {
         // Initialize the components of the 2x2 density matrix.

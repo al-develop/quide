@@ -1411,7 +1411,7 @@ public class Register : IRegister
         _amplitudes.TryGetValue(1, out Complex beta);
 
         // Normalize the amplitudes if their combined magnitude squared is not 1 (due to floating point or uninitialized states).
-        double magnitudeSquared = alpha.Magnitude * alpha.Magnitude + beta.Magnitude * beta.Magnitude;
+        double magnitudeSquared = Math.Pow(alpha.Magnitude, 2) + Math.Pow(beta.Magnitude, 2);
         if (magnitudeSquared == 0)
         {
             // If no amplitudes, return a zero matrix (representing a completely unpolarized state or an error).
@@ -1432,7 +1432,7 @@ public class Register : IRegister
         return rho;
     }
 
-    internal Complex[,] CalculateReducedDensityMatrixForQubit(int targetQubitOffsetInRoot)
+    private Complex[,] CalculateReducedDensityMatrixForQubit(int targetQubitOffsetInRoot)
     {
         return DensityMatrixCalculator.Calculate(_amplitudes, this.Width, targetQubitOffsetInRoot);
     }
