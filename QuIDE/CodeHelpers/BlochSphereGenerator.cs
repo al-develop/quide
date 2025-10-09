@@ -114,7 +114,7 @@ public class BlochSphereGenerator
     {
         // Pure states (length ≈ 1) are red.
         // Mixed states (length < 1) are blue.
-        double length = Math.Sqrt(Math.Pow(blochVector.X, 2) + Math.Pow(blochVector.Y, 2) + Math.Pow(blochVector.Z, 2));
+        double length = Math.Round(Math.Sqrt(Math.Pow(blochVector.X, 2) + Math.Pow(blochVector.Y, 2) + Math.Pow(blochVector.Z, 2)), 3);
         return (length < 1) ? Colors.Blue : Colors.Red;
     }
 
