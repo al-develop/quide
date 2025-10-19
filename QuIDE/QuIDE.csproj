@@ -10,7 +10,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <!-- needed for macOS App -->
         <UseAppHost>true</UseAppHost>
-        <FileVersion>2.4.1</FileVersion>
+        <FileVersion>2.4.2</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
