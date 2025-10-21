@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:vm="using:QuIDE.ViewModels.Controls"
+             xmlns:controls="clr-namespace:QuIDE.ViewModels.Controls"
+             d:DesignWidth="400"
+             d:DesignHeight="400"
+             x:Class="QuIDE.Views.Controls.BlochSphere"
+             x:DataType="controls:BlochSphereViewModel">
+    <UserControl.DataContext>
+        <vm:BlochSphereViewModel />
+    </UserControl.DataContext>
+
+    <Grid RowDefinitions="*, Auto">
+        <Image Grid.Row="0" PointerMoved="BlochSphereImage_OnPointerMoved"
+               PointerPressed="BlochSphereImage_OnPointerPressed"
+               PointerReleased="BlochSphereImage_OnPointerReleased"
+               x:Name="BlochSphereImage"
+               Source="{Binding BlochImage}"
+               Stretch="Uniform"
+               Margin="5" />
+
+        <StackPanel Grid.Row="1"
+                    Margin="5,0,5,0">
+            <StackPanel Orientation="Horizontal" IsVisible="False"
+                        VerticalAlignment="Center"
+                        Margin="0,5,0,0"
+                        HorizontalAlignment="Stretch">
+                <TextBlock Text="Horizontal"
+                           Width="70"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0" />
+                <Slider Minimum="1"
+                        Maximum="360"
+                        MinWidth="360"
+                        Value="{Binding HorizontalDegree}" />
+                <Label Margin="10,0,0,0"
+                       Content="{Binding HorizontalDegree}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center" 
+                        Margin="0,0,0,0" IsVisible="False"
+                        HorizontalAlignment="Stretch">
+                <TextBlock Text="Vertical"
+                           Width="70"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0" />
+                <Slider Minimum="1"
+                        Maximum="360"
+                        MinWidth="360"
+                        Value="{Binding VerticalDegree}" />
+                <Label Margin="10,0,0,0"
+                       Content="{Binding VerticalDegree}" />
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Margin="0,5,0,0"
+                        HorizontalAlignment="Stretch">
+                <Button Command="{Binding ResetView}">
+                    <Border BorderBrush="DimGray"
+                            BorderThickness="1"
+                            Padding="3">
+                        <TextBlock Text="Reset Viewpoint" />
+                    </Border>
+                </Button>
+                
+                <Label Content="{Binding StateVector}"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center" />
+            </StackPanel>
+
+        </StackPanel>
+    </Grid>
+</UserControl>

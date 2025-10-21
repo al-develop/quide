@@ -10,6 +10,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <!-- needed for macOS App -->
         <UseAppHost>true</UseAppHost>
+        <FileVersion>2.4.2</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -48,11 +49,13 @@
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.10.0" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.10.0" />
+        <PackageReference Include="ScottPlot.Avalonia" Version="5.0.55" />
     </ItemGroup>
 
     <ItemGroup>
         <EmbeddedResource Update="Properties\Resources.resx">
             <SubType>Designer</SubType>
+            <Generator>ResXFileCodeGenerator</Generator>
         </EmbeddedResource>
     </ItemGroup>
 

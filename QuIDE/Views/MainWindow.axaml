@@ -6,7 +6,7 @@
         xmlns:p="clr-namespace:QuIDE.Properties"
         xmlns:controls="clr-namespace:QuIDE.Views.Controls"
         xmlns:drawing="clr-namespace:System.Drawing;assembly=System.Drawing.Primitives"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="800"
         x:Class="QuIDE.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="QuIDE - Quantum Integrated Development Environment"
@@ -94,7 +94,7 @@
 			<GridSplitter Classes="verticalSplitter" Grid.Column="1" ResizeDirection="Columns" />
 
 			<!--########################################### Right Column #################################-->
-			<Grid Grid.Column="2" RowDefinitions="1.5*, 2, *">
+			<Grid Grid.Column="2" RowDefinitions="1.5*, 2, *, 2, *">
 				<!--########################################### OutputGrid ##########################################-->
 				<controls:OutputGrid Grid.Row="0" x:Name="outputGrid" DataContext="{Binding OutputGrid}"
                                      HorizontalAlignment="Stretch" Margin="0" VerticalAlignment="Stretch" />
@@ -111,6 +111,9 @@
                         Margin="0"
                         VerticalAlignment="Stretch" />
 				</ScrollViewer>
+				
+				<GridSplitter Classes="horizontalSplitter" Grid.Row="3" ResizeDirection="Rows" />
+				<controls:BlochSphere Grid.Row="4" DataContext="{Binding BlochSphere}" Margin="5" />
 			</Grid>
 		</Grid>
 	</DockPanel>

@@ -450,11 +450,12 @@
     <value>QuIDE - Quantum Integrated Development Environment
 </value>
   </data>
-  <data name="Copyright" xml:space="preserve">
-    <value>© 2014 Joanna Patrzyk, Bartłomiej Patrzyk
+    <data name="Copyright" xml:space="preserve">
+      <value>© 2014 Joanna Patrzyk, Bartłomiej Patrzyk
 © 2023 Marc Fichtner
-© 2023-2024 MNM-Team</value>
-  </data>
+© 2023-2024 MNM-Team
+© 2025 Albert Pankratz</value>
+    </data>
     <data name="Authors" xml:space="preserve">
     <value>Authors:
 Joanna Patrzyk (jpatrzyk@quide.eu)
@@ -470,4 +471,40 @@ MNM-Team (mnm-team.org)</value>
     <data name="Undo" xml:space="preserve">
     <value>Undo [Ctrl+Z]</value>
   </data>
+    <data name="NoImg" xml:space="preserve">
+      <value>No Image to render</value>
+    </data>
+    <data name="NoQubit" xml:space="preserve">
+      <value>No Qubit selected</value>
+    </data>
+    <data name="AreaTooSmall" xml:space="preserve">
+      <value>Area too small</value>
+    </data>    
+    <data name="QubitEntanlged" xml:space="preserve">
+      <value>Selected qubit is entangled</value>
+    </data>
+    <data name="KetZero" xml:space="preserve">
+      <value>|0&gt;</value>
+    </data>
+    <data name="KetOne" xml:space="preserve">
+      <value>|1&gt;</value>
+    </data>
+    <data name="KetPlus" xml:space="preserve">
+      <value>|+&gt;</value>
+    </data>
+    <data name="KetMinus" xml:space="preserve">
+      <value>|-&gt;</value>
+    </data>
+    <data name="KetPositive_I" xml:space="preserve">
+      <value>|i&gt;</value>
+    </data>
+    <data name="KetNegative_I" xml:space="preserve">
+      <value>|-i&gt;</value>
+    </data>
+    <data name="Version" xml:space="preserve">
+      <value>2.4.1</value>
+    </data>
+    <data name="NoRegisterForQubitFound" xml:space="preserve">
+      <value>Could not find quantum register for selected qubit.</value>
+    </data>
 </root>

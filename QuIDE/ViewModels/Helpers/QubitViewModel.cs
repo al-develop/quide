@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using QuIDE.CodeHelpers;
 using QuIDE.QuantumModel;
+using QuIDE.ViewModels.Controls;
 using QuIDE.ViewModels.Dialog;
 using QuIDE.Views.Dialog;
 
@@ -16,7 +17,28 @@ namespace QuIDE.ViewModels.Helpers;
 
 public class QubitViewModel : ViewModelBase
 {
-    public QubitViewModel(ComputerModel model, int registerIndex, int rowIndex, DialogManager dialogManager)
+    private bool _isSelected;
+    private CircuitGridViewModel _topParentVM;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value)
+                return;
+            
+            _isSelected = value;
+            OnPropertyChanged(nameof(IsSelected));
+            
+            if (_isSelected)
+                _topParentVM.SelectedQubit = this;
+            else if (_topParentVM.SelectedQubit == this)
+                _topParentVM.SelectedQubit = null;
+            
+        }
+    }
+
+    public QubitViewModel(ComputerModel model, int registerIndex, int rowIndex, DialogManager dialogManager, CircuitGridViewModel topParentVM)
     {
         _model = model;
         _registerIndex = registerIndex;
@@ -25,6 +47,7 @@ public class QubitViewModel : ViewModelBase
         _deleteRegister = new DelegateCommand(DeleteRegister, x => model.Registers.Count > 1);
 
         _dialogManager = dialogManager;
+        _topParentVM = topParentVM;
     }
 
 

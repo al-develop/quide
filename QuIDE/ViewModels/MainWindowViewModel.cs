@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
+using System.Numerics;
+using System.Resources;
+using System.Text;
 using System.Windows.Input;
 using Avalonia.Controls;
 using QuIDE.CodeHelpers;
@@ -9,9 +14,13 @@ using QuIDE.ViewModels.Dialog;
 using QuIDE.Views;
 using QuIDE.Views.Dialog;
 using CommunityToolkit.Mvvm.Input;
+using QuIDE.Properties;
 using QuIDE.QuantumModel;
 using QuIDE.QuantumParser;
+using QuIDE.ViewModels.Helpers;
+using Image = ScottPlot.Image;
 using Parser = QuIDE.QuantumParser.Parser;
+using Register = Quantum.Register;
 
 namespace QuIDE.ViewModels;
 
@@ -47,13 +56,16 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_circuitGridVM != null) return _circuitGridVM;
+            if (_circuitGridVM != null)
+                return _circuitGridVM;
 
             _circuitGridVM = new CircuitGridViewModel(_model, _dialogManager);
 
-            if (_propertiesVM != null) _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
+            if (_propertiesVM != null)
+                _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
 
-            if (_outputGridVM != null) _outputGridVM.AddQubitsTracing(_circuitGridVM);
+            if (_outputGridVM != null)
+                _outputGridVM.AddQubitsTracing(_circuitGridVM);
 
             return _circuitGridVM;
         }
@@ -64,9 +76,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
             _circuitGridVM = value;
 
-            if (_propertiesVM != null) _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
+            if (_propertiesVM != null)
+                _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
 
-            if (_outputGridVM != null) _outputGridVM.AddQubitsTracing(_circuitGridVM);
+            if (_outputGridVM != null)
+                _outputGridVM.AddQubitsTracing(_circuitGridVM);
 
             OnPropertyChanged(nameof(CircuitGrid));
         }
@@ -80,9 +94,12 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 _outputGridVM = new OutputGridViewModel();
                 _outputGridVM.LoadModel(_model, _outputModel);
-                if (_circuitGridVM != null) _outputGridVM.AddQubitsTracing(_circuitGridVM);
+                _outputGridVM.SetMainViewModel(this);
+                if (_circuitGridVM != null)
+                    _outputGridVM.AddQubitsTracing(_circuitGridVM);
 
-                if (_propertiesVM != null) _propertiesVM.AddSelectionTracing(_outputGridVM);
+                if (_propertiesVM != null)
+                    _propertiesVM.AddSelectionTracing(_outputGridVM);
             }
 
             return _outputGridVM;
@@ -94,9 +111,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
             _outputGridVM = value;
 
-            if (_circuitGridVM != null) _outputGridVM.AddQubitsTracing(_circuitGridVM);
+            if (_circuitGridVM != null)
+                _outputGridVM.AddQubitsTracing(_circuitGridVM);
 
-            if (_propertiesVM != null) _propertiesVM.AddSelectionTracing(_outputGridVM);
+            if (_propertiesVM != null)
+                _propertiesVM.AddSelectionTracing(_outputGridVM);
 
             OnPropertyChanged(nameof(OutputGrid));
         }
@@ -106,12 +125,15 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_propertiesVM != null) return _propertiesVM;
+            if (_propertiesVM != null)
+                return _propertiesVM;
 
             _propertiesVM = new PropertiesViewModel(CircuitGrid, OutputGrid);
-            if (_outputGridVM != null) _propertiesVM.AddSelectionTracing(_outputGridVM);
+            if (_outputGridVM != null)
+                _propertiesVM.AddSelectionTracing(_outputGridVM);
 
-            if (_circuitGridVM != null) _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
+            if (_circuitGridVM != null)
+                _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
 
             return _propertiesVM;
         }
@@ -122,9 +144,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
             _propertiesVM = value;
 
-            if (_outputGridVM != null) _propertiesVM.AddSelectionTracing(_outputGridVM);
+            if (_outputGridVM != null)
+                _propertiesVM.AddSelectionTracing(_outputGridVM);
 
-            if (_circuitGridVM != null) _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
+            if (_circuitGridVM != null)
+                _propertiesVM.AddSelectionAndQubitsTracing(_circuitGridVM);
 
             OnPropertyChanged(nameof(PropertiesPane));
         }
@@ -147,7 +171,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_toolsVM != null) return _toolsVM;
+            if (_toolsVM != null)
+                return _toolsVM;
 
             var eval = CircuitEvaluator.GetInstance();
             var dict = eval.GetExtensionGates();
@@ -160,6 +185,8 @@ public partial class MainWindowViewModel : ViewModelBase
             OnPropertyChanged(nameof(CompositeTools));
         }
     }
+
+    public BlochSphereViewModel BlochSphere { get; private set; }
 
     public static ActionName SelectedAction { get; private set; }
 
@@ -188,6 +215,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // they need dialogManager
         InitFromModel(ComputerModel.CreateModelForGUI());
+        InitBlochSphereView();
 
         // inject dialogManager and notify handler
         EditorPane = new EditorViewModel(_dialogManager, NotifyEditorDependentCommands);
@@ -197,12 +225,40 @@ public partial class MainWindowViewModel : ViewModelBase
         _consoleWriter.TextChanged += _consoleWriter_TextChanged;
     }
 
+    private void InitBlochSphereView()
+    {
+        _blochSphereGenerator = new BlochSphereGenerator();
+        BlochSphere = new BlochSphereViewModel(_blochSphereGenerator.DefaultAzimuthDegrees, _blochSphereGenerator.DefaultElevationDegrees);
+
+        // when Bloch Sphere sliders are changed or another qubit is selected: 
+        //      regenerate Bloch Image with new arguments
+        BlochSphere.PropertyChanged += BlochSphereOnPropertyChanged;
+        CircuitGrid.PropertyChanged += CircuitGridOnPropertyChanged;
+    }
+
+    private void CircuitGridOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CircuitGridViewModel.SelectedQubit))
+            UpdateBlochSphere();
+    }
+
+    private void BlochSphereOnPropertyChanged(object sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(BlochSphere.VerticalDegree)
+            || e.PropertyName == nameof(BlochSphere.HorizontalDegree)
+            || e.PropertyName == nameof(BlochSphere.RenderSize))
+        {
+            UpdateBlochSphere();
+        }
+    }
+
     private async void WindowClosing(object sender, WindowClosingEventArgs args)
     {
         args.Cancel = true;
 
         var canClose = await EditorPane.EditorCanClose();
-        if (!canClose) return;
+        if (!canClose)
+            return;
 
         // Detach self and close with default handler
         _window.Closing -= WindowClosing;
@@ -229,6 +285,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private ObservableCollection<string> _toolsVM;
     private string _selectedComposite;
+    private BlochSphereGenerator _blochSphereGenerator;
 
     private ConsoleWriter _consoleWriter;
 
@@ -260,7 +317,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_calculatorCommand == null) _calculatorCommand = new DelegateCommand(null, _ => false);
+            if (_calculatorCommand == null)
+                _calculatorCommand = new DelegateCommand(null, _ => false);
 
             return _calculatorCommand;
         }
@@ -270,7 +328,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_aboutCommand == null) _aboutCommand = new DelegateCommand(ShowAbout, _ => true);
+            if (_aboutCommand == null)
+                _aboutCommand = new DelegateCommand(ShowAbout, _ => true);
 
             return _aboutCommand;
         }
@@ -280,7 +339,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_selectAction == null) _selectAction = new DelegateCommand(SelectAction, x => true);
+            if (_selectAction == null)
+                _selectAction = new DelegateCommand(SelectAction, x => true);
 
             return _selectAction;
         }
@@ -290,7 +350,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_group == null) _group = new DelegateCommand(MakeComposite, x => true);
+            if (_group == null)
+                _group = new DelegateCommand(MakeComposite, x => true);
 
             return _group;
         }
@@ -300,7 +361,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_clearCircuit == null) _clearCircuit = new DelegateCommand(ClearCircuit, x => true);
+            if (_clearCircuit == null)
+                _clearCircuit = new DelegateCommand(ClearCircuit, x => true);
 
             return _clearCircuit;
         }
@@ -310,7 +372,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_cutGates == null) _cutGates = new DelegateCommand(CutGates, x => true);
+            if (_cutGates == null)
+                _cutGates = new DelegateCommand(CutGates, x => true);
 
             return _cutGates;
         }
@@ -320,7 +383,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_copyGates == null) _copyGates = new DelegateCommand(CopyGates, x => true);
+            if (_copyGates == null)
+                _copyGates = new DelegateCommand(CopyGates, x => true);
 
             return _copyGates;
         }
@@ -330,7 +394,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_pasteGates == null) _pasteGates = new DelegateCommand(PasteGates, x => true);
+            if (_pasteGates == null)
+                _pasteGates = new DelegateCommand(PasteGates, x => true);
 
             return _pasteGates;
         }
@@ -340,7 +405,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_pasteGates == null) _pasteGates = new DelegateCommand(DeleteGates, x => true);
+            if (_pasteGates == null)
+                _pasteGates = new DelegateCommand(DeleteGates, x => true);
 
             return _pasteGates;
         }
@@ -350,7 +416,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_restart == null) _restart = new DelegateCommand(Restart, x => true);
+            if (_restart == null)
+                _restart = new DelegateCommand(Restart, x => true);
 
             return _restart;
         }
@@ -360,7 +427,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_prevStep == null) _prevStep = new DelegateCommand(PrevStep, x => true);
+            if (_prevStep == null)
+                _prevStep = new DelegateCommand(PrevStep, x => true);
 
             return _prevStep;
         }
@@ -370,7 +438,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_nextStep == null) _nextStep = new DelegateCommand(NextStep, x => true);
+            if (_nextStep == null)
+                _nextStep = new DelegateCommand(NextStep, x => true);
 
             return _nextStep;
         }
@@ -380,7 +449,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         get
         {
-            if (_run == null) _run = new DelegateCommand(RunToEnd, x => true);
+            if (_run == null)
+                _run = new DelegateCommand(RunToEnd, x => true);
 
             return _run;
         }
@@ -437,7 +507,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 _model.MakeComposite(name, toGroup);
 
-                if (_toolsVM.Contains(name)) return;
+                if (_toolsVM.Contains(name))
+                    return;
 
                 var newTools = _toolsVM;
                 newTools.Add(name);
@@ -486,7 +557,8 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             var code = EditorPane.SelectedDocument?.Editor.Document.Text;
-            if (string.IsNullOrWhiteSpace(code)) throw new NullReferenceException("Code is empty or not existing");
+            if (string.IsNullOrWhiteSpace(code))
+                throw new NullReferenceException("Code is empty or not existing");
 
             var asmToBuild = parser.CompileForBuild(code);
             var eval = CircuitEvaluator.GetInstance();
@@ -523,7 +595,8 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             var code = EditorPane.SelectedDocument?.Editor.Document.Text;
-            if (string.IsNullOrWhiteSpace(code)) throw new NullReferenceException("Code is empty or not existing");
+            if (string.IsNullOrWhiteSpace(code))
+                throw new NullReferenceException("Code is empty or not existing");
 
             var asm = parser.CompileForRun(code);
             Parser.Execute(asm, _consoleWriter);
@@ -556,6 +629,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             _outputModel = eval.InitFromModel(_model);
             OutputGrid.LoadModel(_model, _outputModel);
+            UpdateBlochSphere();
         }
         catch (Exception e)
         {
@@ -574,13 +648,16 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                if (!_model.CanStepBack(currentStep - 1)) return;
+                if (!_model.CanStepBack(currentStep - 1))
+                    return;
 
                 var eval = CircuitEvaluator.GetInstance();
                 var se = eval.GetStepEvaluator();
                 var outputChanged = se.RunStep(_model.Steps[currentStep - 1].Gates, true);
                 _model.CurrentStep = currentStep - 1;
-                if (outputChanged) _outputModel.Update(eval.RootRegister);
+                if (outputChanged)
+                    _outputModel.Update(eval.RootRegister);
+                UpdateBlochSphere();
             }
         }
         catch (Exception e)
@@ -596,14 +673,18 @@ public partial class MainWindowViewModel : ViewModelBase
             var eval = CircuitEvaluator.GetInstance();
 
             var currentStep = _model.CurrentStep;
-            if (currentStep == 0) eval.InitFromModel(_model);
+            if (currentStep == 0)
+                eval.InitFromModel(_model);
 
-            if (currentStep >= _model.Steps.Count) return;
+            if (currentStep >= _model.Steps.Count)
+                return;
 
             var se = eval.GetStepEvaluator();
             var outputChanged = se.RunStep(_model.Steps[currentStep].Gates);
             _model.CurrentStep = currentStep + 1;
-            if (outputChanged) _outputModel.Update(eval.RootRegister);
+            if (outputChanged)
+                _outputModel.Update(eval.RootRegister);
+            UpdateBlochSphere();
         }
         catch (Exception e)
         {
@@ -618,12 +699,15 @@ public partial class MainWindowViewModel : ViewModelBase
             var eval = CircuitEvaluator.GetInstance();
 
             var currentStep = _model.CurrentStep;
-            if (currentStep == 0) eval.InitFromModel(_model);
+            if (currentStep == 0)
+                eval.InitFromModel(_model);
 
             var se = eval.GetStepEvaluator();
             var outputChanged = se.RunToEnd(_model.Steps, currentStep);
             _model.CurrentStep = _model.Steps.Count;
-            if (outputChanged) _outputModel.Update(eval.RootRegister);
+            if (outputChanged)
+                _outputModel.Update(eval.RootRegister);
+            UpdateBlochSphere();
         }
         catch (Exception e)
         {
@@ -650,7 +734,6 @@ public partial class MainWindowViewModel : ViewModelBase
         await new AboutWindow().ShowDialog(_window);
     }
 
-
     #region Private Helpers
 
     private void InitFromModel(ComputerModel model)
@@ -663,7 +746,7 @@ public partial class MainWindowViewModel : ViewModelBase
             foreach (var pair in oldComposites.Where(pair => !newComposites.ContainsKey(pair.Key)))
                 newComposites[pair.Key] = pair.Value;
         }
-        
+
         try
         {
             _model = model;
@@ -675,10 +758,9 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (NullReferenceException)
         {
-            SimpleDialogHandler.ShowSimpleMessage("No circuit to build.","Warning");
+            SimpleDialogHandler.ShowSimpleMessage("No circuit to build.", "Warning");
             ClearCircuit(true);
         }
-        
     }
 
     private void _consoleWriter_TextChanged(object sender, EventArgs eventArgs)
@@ -689,11 +771,153 @@ public partial class MainWindowViewModel : ViewModelBase
     private static void PrintException(Exception e)
     {
         var message = e.Message;
-        if (e.InnerException != null) message = message + ":\n" + e.InnerException.Message;
+        if (e.InnerException != null)
+            message = message + ":\n" + e.InnerException.Message;
         message = message + "\n" + e.StackTrace;
 
         SimpleDialogHandler.ShowSimpleMessage(message);
     }
 
     #endregion // Private Helpers
+
+    public void UpdateBlochSphere()
+    {
+        (Register qubitSubRegister, bool success, string errorMessage) = GetSelectedQubitRegister();
+
+        if (success == false)
+        {
+            BlochSphere.ClearImage(errorMessage);
+            return;
+        }
+
+        RenderBlochSphereImageAndText(qubitSubRegister);
+    }
+
+    #region BlochSphereHelpers
+
+    /// <summary>
+    /// Retrieves the quantum sub-register for the currently selected qubit.
+    /// Handles initial null checks for UI elements and parser components.
+    /// </summary>
+    /// <returns>
+    /// A tuple containing:
+    /// - The `Quantum.Register` instance for the selected single qubit.
+    /// - A boolean indicating success.
+    /// - An error message string if unsuccessful, otherwise null.
+    /// </returns>
+    private (Register qubitSubRegister, bool success, string errorMessage) GetSelectedQubitRegister()
+    {
+        // Get the currently selected qubit from the circuit grid.
+        QubitViewModel selectedQubit = CircuitGrid?.SelectedQubit;
+        if (selectedQubit == null)
+            return (null, false, Resources.NoQubit); // No qubit selected.
+
+        QuantumComputer qc = QuantumComputer.GetInstance();
+        QuantumParser.Register parserRegister = qc.FindRegister(selectedQubit.RegisterName);
+        if (parserRegister == null)
+            return (null, false, Resources.NoRegisterForQubitFound);
+
+        Register quantumRegister = parserRegister.SourceRegister;
+        Register qubitSubRegister = quantumRegister[selectedQubit.Index, 1];
+        return (qubitSubRegister, true, null);
+    }
+
+    /// <summary>
+    /// Renders the Bloch sphere image and updates the state vector text based on the qubit's state.
+    /// This method distinguishes between pure and mixed states, calling the appropriate BlochSphereGenerator method.
+    /// </summary>
+    /// <param name="qubitSubRegister">The single-qubit quantum register model.</param>
+    private void RenderBlochSphereImageAndText(Register qubitSubRegister)
+    {
+        try
+        {
+            int imgSize = BlochSphere.RenderSize;
+            // Check if the render area is too small
+            if (imgSize < 20)
+            {
+                BlochSphere.ClearImage(Resources.AreaTooSmall);
+                return;
+            }
+
+            Complex[,] densityMatrix = qubitSubRegister.GetReducedDensityMatrix();
+            if (densityMatrix == null)
+            {
+                BlochSphere.ClearImage("Could not calculate state");
+                return;
+            }
+
+            _blochSphereGenerator.SetViewpoint(BlochSphere.HorizontalDegree, BlochSphere.VerticalDegree);
+            ScottPlot.Image plotImg = _blochSphereGenerator.GeneratePlot(densityMatrix, imgSize);
+
+            BlochSphere.BlochImage = BlochSphere.ToBitmap(plotImg);
+            BlochSphere.StateVector = GetStateVectorTextFromDensityMatrix(densityMatrix);
+            ;
+        }
+        catch (ArgumentException ex)
+        {
+            BlochSphere.ClearImage($"Error calculating density matrix: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            BlochSphere.ClearImage($"Error generating Bloch sphere: {ex.Message}");
+        }
+    }
+
+    private static string GetStateVectorTextFromDensityMatrix(Complex[,] densityMatrix)
+    {
+        // First, calculate the Bloch vector components from the density matrix.
+        // This is the universal representation for any state.
+        double x = 2 * densityMatrix[0, 1].Real;
+        double y = 2 * densityMatrix[0, 1].Imaginary;
+        double z = densityMatrix[0, 0].Real - densityMatrix[1, 1].Real;
+
+        // The squared length of the Bloch vector tells us if the state is pure.
+        double lengthSquared = Math.Pow(x, 2) + Math.Pow(y, 2) + Math.Pow(z, 2);
+        
+        // Use a small tolerance for floating-point comparisons.
+        const double epsilon = 1e-6;
+
+        StringBuilder stateVectorBuilder;
+
+        if (Math.Abs(lengthSquared - 1.0) < epsilon)
+        {
+            // Pure state: We can reconstruct alpha and beta.
+            Complex alpha, beta;
+            alpha = new Complex(Math.Sqrt(densityMatrix[0, 0].Real), 0);
+
+            // Handle the edge case where the state is |1>, so alpha is 0.
+            if (alpha.Magnitude < epsilon)
+            {
+                // If alpha is zero, the state is |1⟩. We can choose beta's phase to be 0 as well.
+                beta = new Complex(1, 0);
+            }
+            else
+            {
+                // We use ρ₁₀ = β * α* to solve for β. Since α is real, α* = α.
+                // β = ρ₁₀ / α
+                beta = densityMatrix[1, 0] / alpha;
+            }
+
+            stateVectorBuilder = new StringBuilder();
+            stateVectorBuilder.AppendLine("State: Pure");
+            stateVectorBuilder.AppendLine($"α ≈ {alpha.Real:F3} + {alpha.Imaginary:F3}i");
+            stateVectorBuilder.AppendLine($"β ≈ {beta.Real:F3} + {beta.Imaginary:F3}i");
+        }
+        else
+        {
+            // Mixed state: There is no single alpha/beta. We display the density matrix elements.
+            stateVectorBuilder = new StringBuilder();
+            stateVectorBuilder.AppendLine("State: Mixed");
+            stateVectorBuilder.Append($@"ρ₀₀ = {densityMatrix[0, 0].Real:F3}    ");
+            stateVectorBuilder.AppendLine($@"ρ₀₁ = {densityMatrix[0, 1].Real:F3} + {densityMatrix[0, 1].Imaginary:F3}i");
+            stateVectorBuilder.Append($@"ρ₁₀ = {densityMatrix[1, 0].Real:F3} + {densityMatrix[1, 0].Imaginary:F3}i    ");
+            stateVectorBuilder.AppendLine($@"ρ₁₁ = {densityMatrix[1, 1].Real:F3}");
+        }
+
+        // Bloch vector.
+        stateVectorBuilder.AppendLine($"Bloch Vector: (x={x:F3}, y={y:F3}, z={z:F3})");
+        return stateVectorBuilder.ToString();
+    }
+
+    #endregion BlochSphereHelpers
 }
